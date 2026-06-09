@@ -38,15 +38,7 @@ setTimeout(function() {
   while (tmp.firstChild) document.body.appendChild(tmp.firstChild);
 })();
 
-// ── TOAST ─────────────────────────────────────────────────────
-function toast(msg, dur) {
-  dur = dur || 2500;
-  var t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, dur);
-}
+// toast() defined in main app below
 
 // ── MAIN APP ──────────────────────────────────────────────────
 const CATS=[
