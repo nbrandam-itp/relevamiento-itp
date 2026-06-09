@@ -1,0 +1,5 @@
+{
+  "version": "1.0",
+  "fecha": "2026-06-08",
+  "notas": "Version inicial con PIN, sync bidireccional y geolocalizacion"
+}
