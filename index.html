@@ -548,7 +548,26 @@ async function saveCloud(){
 }
 async function syncDet(){const v=visits.find(v=>v.id===detId);if(!v)return;toast('⏳...',4000);const ok=await push(v);if(ok){v.synced=true;save();renderHome();toast('✅ Sincronizado',3000);renderSum(v,'det-content');}else toast('⚠️ Sin conexión',3000);}
 async function syncAll(){const p=visits.filter(v=>!v.synced);if(!p.length){toast('✅ Todo sync');return;}toast('⏳ Sincronizando '+p.length+'...',5000);let ok=0;for(const v of p){if(await push(v)){v.synced=true;ok++;}}save();renderHome();renderRd();toast('✅ '+ok+'/'+p.length,3000);}
-function saveLocal(){if(!currentV)return;const i=visits.findIndex(v=>v.id===currentV.id);if(i>=0)visits[i]=currentV;else visits.unshift(currentV);save();currentV=null;renderHome();go('s-home');toast('💾 Guardado local');}
+function saveLocal(){
+  if(!currentV){toast('⚠️ Error: sin visita activa');return;}
+  try{
+    // Save notes from form if still on cats screen
+    const ng=document.getElementById('f-notas-gen');
+    const cg=document.getElementById('f-comp-gen');
+    if(ng)currentV.store.notas=ng.value;
+    if(cg)currentV.store.comp=cg.value;
+    const i=visits.findIndex(v=>v.id===currentV.id);
+    if(i>=0)visits[i]=currentV;else visits.unshift(currentV);
+    save();
+    const saved=JSON.parse(localStorage.getItem('itp_v5')||'[]');
+    if(saved.length>0){
+      currentV=null;renderHome();go('s-home');
+      toast('💾 Guardado — '+saved.length+' visita(s) en total');
+    }else{
+      toast('❌ Error al guardar — revisar almacenamiento');
+    }
+  }catch(e){toast('❌ Error: '+e.message);}
+}
 function delCurrent(){if(!confirm('¿Borrar?'))return;visits=visits.filter(v=>v.id!==currentV.id);save();currentV=null;renderHome();go('s-home');}
 function delDet(){if(!confirm('¿Borrar?'))return;visits=visits.filter(v=>v.id!==detId);save();renderHome();go('s-home');}
 function editV(){const v=visits.find(v=>v.id===detId);if(!v)return;currentV=JSON.parse(JSON.stringify(v));currentV.synced=false;document.getElementById('f-nombre').value=v.store.nombre;document.getElementById('f-dir').value=v.store.dir||'';document.getElementById('f-zona').value=v.store.zona||'';document.getElementById('f-tel').value=v.store.tel||'';document.getElementById('f-tipo').value=v.store.tipo||'';document.getElementById('f-size').value=v.store.size||'';document.getElementById('f-dist').value=v.store.dist||'';document.getElementById('f-sat').value=v.store.sat||'';document.getElementById('f-freq').value=v.store.freq||'';document.getElementById('f-prob').value=v.store.prob||'';document.getElementById('f-notas').value=v.store.notas||'';document.getElementById('f-accion').value=v.store.accion||'';document.getElementById('cats-nombre').textContent=v.store.nombre;renderCatList();go('s-cats');}
