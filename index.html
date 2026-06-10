@@ -895,394 +895,209 @@ function confirmarInforme() {
 // ════════════════════════════════════════════════════════
 
 function genInformeCompleto(visitsArr, desde, hasta) {
-  toast('⏳ Generando informe...', 3000);
+  toast('Generando informe...', 3000);
 
-  // ── AGGREGATE DATA ──────────────────────────────────
-  let totalSi=0, totalNo=0, totalComp=0, totalFotos=0;
-  const zonas = {}, distribuidores = {}, distProblemas = [], acciones = [];
-  const allCompItems = [], allPrices = [], allSiItems = [], allNoItems = [];
-  const catPresencia = {}; // {catName: {si:0, no:0}}
+  var totalSi=0, totalNo=0, totalComp=0, totalFotos=0;
+  var zonas={}, distribuidores={}, distProblemas=[], acciones=[];
+  var allCompItems=[], allPrices=[], allSiItems=[], allNoItems=[];
+  var catPresencia={};
+  CATS.forEach(function(c){ catPresencia[c.name]={si:0,no:0,comp:[]}; });
 
-  CATS.forEach(c => { catPresencia[c.name] = {si:0, no:0, comp:[]}; });
-
-  visitsArr.forEach(v => {
-    // Zonas counter
-    const z = v.store.zona || 'Sin zona';
+  visitsArr.forEach(function(v) {
+    var z = v.store.zona || 'Sin zona';
     zonas[z] = (zonas[z]||0) + 1;
-
-    // Distribuidores counter
-    const d = v.store.dist || 'Sin distribuidor';
+    var d = v.store.dist || 'Sin distribuidor';
     distribuidores[d] = (distribuidores[d]||0) + 1;
-
-    // Dist problems
-    if (v.store.prob) {
-      distProblemas.push({
-        tienda: v.store.nombre, zona: v.store.zona||'—',
-        dist: v.store.dist||'—', sat: v.store.sat||'—',
-        prob: v.store.prob, fecha: v.isoDate||v.date
+    if (v.store.prob) distProblemas.push({tienda:v.store.nombre, zona:v.store.zona||'—', dist:v.store.dist||'—', sat:v.store.sat||'—', prob:v.store.prob, fecha:v.isoDate||v.date});
+    if (v.store.accion) acciones.push({tienda:v.store.nombre, accion:v.store.accion, fecha:v.isoDate||v.date});
+    CATS.forEach(function(cat) {
+      var cs = v.cats[cat.id]; if (!cs) return;
+      cat.brands.forEach(function(b) {
+        var val = cs.brands[b];
+        if (val==='si'){totalSi++;catPresencia[cat.name].si++;allSiItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,marca:b,fecha:v.isoDate||v.date});}
+        else if (val==='no'){totalNo++;catPresencia[cat.name].no++;allNoItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,marca:b,fecha:v.isoDate||v.date});}
       });
-    }
-
-    // Acciones
-    if (v.store.accion) acciones.push({tienda: v.store.nombre, accion: v.store.accion, fecha: v.isoDate||v.date});
-
-    CATS.forEach(cat => {
-      const cs = v.cats[cat.id]; if (!cs) return;
-      cat.brands.forEach(b => {
-        const val = cs.brands[b];
-        if (val === 'si') {
-          totalSi++;
-          catPresencia[cat.name].si++;
-          allSiItems.push({tienda:v.store.nombre, zona:v.store.zona||'—', cat:cat.name, marca:b, fecha:v.isoDate||v.date});
-        } else if (val === 'no') {
-          totalNo++;
-          catPresencia[cat.name].no++;
-          allNoItems.push({tienda:v.store.nombre, zona:v.store.zona||'—', cat:cat.name, marca:b, fecha:v.isoDate||v.date});
-        }
-      });
-      cat.prices.forEach(l => {
-        if (cs.prices[l]) allPrices.push({tienda:v.store.nombre, zona:v.store.zona||'—', cat:cat.name, linea:l, precio:cs.prices[l], fecha:v.isoDate||v.date});
-      });
-      cs.comps.forEach(c2 => {
-        if (c2.marca||c2.producto) {
-          totalComp++;
-          catPresencia[cat.name].comp.push(c2.marca||'—');
-          allCompItems.push({tienda:v.store.nombre, zona:v.store.zona||'—', cat:cat.name, ...c2, fecha:v.isoDate||v.date});
-        }
-      });
+      cat.prices.forEach(function(l){ if(cs.prices[l]) allPrices.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,linea:l,precio:cs.prices[l],fecha:v.isoDate||v.date}); });
+      cs.comps.forEach(function(c2){ if(c2.marca||c2.producto){totalComp++;catPresencia[cat.name].comp.push(c2.marca||'—');allCompItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,marca:c2.marca||'',producto:c2.producto||'',precio:c2.precio||'',nota:c2.nota||'',fecha:v.isoDate||v.date});} });
       totalFotos += cs.photos.length;
     });
   });
 
-  // ── FORMAT DATE RANGE ───────────────────────────────
-  const fmtDate = iso => {
-    const [y,m,d] = iso.split('-');
-    return d+'/'+m+'/'+y;
-  };
-  const rangeLabel = desde === hasta ? fmtDate(desde) : fmtDate(desde)+' al '+fmtDate(hasta);
-  const genDate = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  var fmtDate = function(iso){ var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+  var rangeLabel = desde===hasta ? fmtDate(desde) : fmtDate(desde)+' al '+fmtDate(hasta);
+  var genDate = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  var pct = (totalSi+totalNo)>0 ? Math.round(totalSi/(totalSi+totalNo)*100) : 0;
 
-  // ── BUILD HTML REPORT ───────────────────────────────
-  const pct = (totalSi+totalNo) > 0 ? Math.round(totalSi/(totalSi+totalNo)*100) : 0;
-
-  // Store rows table
-  let storeRows = '';
-  visitsArr.sort((a,b)=>(a.isoDate||'').localeCompare(b.isoDate||'')).forEach(v => {
-    let si=0,no=0,comp=0,ph=0;
-    CATS.forEach(cat=>{
-      const cs=v.cats[cat.id];if(!cs)return;
-      Object.values(cs.brands).forEach(val=>{if(val==='si')si++;else if(val==='no')no++;});
-      comp+=cs.comps.length; ph+=cs.photos.length;
-    });
-    const satColor = v.store.sat==='Muy contento'||v.store.sat==='Contento' ? '#16803C' : v.store.sat==='Insatisfecho' ? '#B91C1C' : '#B45309';
-    storeRows += `<tr>
-      <td>${v.isoDate||v.date}</td>
-      <td><strong>${v.store.nombre}</strong></td>
-      <td>${v.store.zona||'—'}</td>
-      <td>${v.store.tipo||'—'}</td>
-      <td>${v.store.dist||'—'}</td>
-      <td style="color:${satColor};font-weight:600">${v.store.sat||'—'}</td>
-      <td>${v.store.freq||'—'}</td>
-      <td style="color:#16803C;font-weight:700">${si}</td>
-      <td style="color:#B91C1C;font-weight:700">${no}</td>
-      <td style="color:#B45309">${comp}</td>
-      <td>${v.store.tel||'—'}</td>
-      <td>${v.store.accion||'—'}</td>
-    </tr>`;
+  // Build store rows
+  var storeRows = '';
+  visitsArr.slice().sort(function(a,b){return (a.isoDate||'').localeCompare(b.isoDate||'');}).forEach(function(v){
+    var si=0,no=0,comp=0;
+    CATS.forEach(function(cat){var cs=v.cats[cat.id];if(!cs)return;Object.values(cs.brands).forEach(function(val){if(val==='si')si++;else if(val==='no')no++;});comp+=cs.comps.length;});
+    var satColor = (v.store.sat==='Muy contento'||v.store.sat==='Contento') ? '#16803C' : v.store.sat==='Insatisfecho' ? '#B91C1C' : '#B45309';
+    storeRows += '<tr><td>'+(v.isoDate||v.date)+'</td><td><strong>'+v.store.nombre+'</strong></td><td>'+(v.store.zona||'—')+'</td><td>'+(v.store.tipo||'—')+'</td><td>'+(v.store.dist||'—')+'</td><td style="color:'+satColor+';font-weight:600">'+(v.store.sat||'—')+'</td><td>'+(v.store.freq||'—')+'</td><td style="color:#16803C;font-weight:700">'+si+'</td><td style="color:#B91C1C;font-weight:700">'+no+'</td><td style="color:#B45309">'+comp+'</td><td>'+(v.store.tel||'—')+'</td><td>'+(v.store.accion||'—')+'</td></tr>';
   });
 
-  // Presencia por categoría table
-  let catRows = '';
-  CATS.forEach(cat => {
-    const cp = catPresencia[cat.name];
-    const total = cp.si + cp.no;
-    const pct2 = total > 0 ? Math.round(cp.si/total*100) : 0;
-    const compMarcas = [...new Set(cp.comp)].slice(0,5).join(', ');
-    const color = pct2>=70?'#16803C':pct2>=30?'#B45309':'#B91C1C';
-    catRows += `<tr>
-      <td><strong>${cat.name}</strong></td>
-      <td style="color:#16803C;font-weight:700">${cp.si}</td>
-      <td style="color:#B91C1C;font-weight:700">${cp.no}</td>
-      <td style="color:${color};font-weight:700">${pct2}%</td>
-      <td style="color:#B45309">${compMarcas||'—'}</td>
-    </tr>`;
+  // Build category rows
+  var catRows = '';
+  CATS.forEach(function(cat){
+    var cp=catPresencia[cat.name];
+    var total=cp.si+cp.no;
+    var pct2=total>0?Math.round(cp.si/total*100):0;
+    var compMarcas=[...new Set(cp.comp)].slice(0,5).join(', ');
+    var color=pct2>=70?'#16803C':pct2>=30?'#B45309':'#B91C1C';
+    catRows += '<tr><td><strong>'+cat.name+'</strong></td><td style="color:#16803C;font-weight:700">'+cp.si+'</td><td style="color:#B91C1C;font-weight:700">'+cp.no+'</td><td style="color:'+color+';font-weight:700">'+pct2+'%</td><td style="color:#B45309">'+(compMarcas||'—')+'</td></tr>';
   });
 
-  // Prices table
-  let priceRows = '';
-  allPrices.forEach(p => {
-    priceRows += `<tr>
-      <td>${p.tienda}</td><td>${p.zona}</td>
-      <td>${p.cat}</td><td>${p.linea}</td>
-      <td style="color:#16803C;font-weight:700">€${p.precio}</td>
-      <td>${p.fecha}</td>
-    </tr>`;
-  });
+  // Build price rows
+  var priceRows = '';
+  allPrices.forEach(function(p){ priceRows += '<tr><td>'+p.tienda+'</td><td>'+p.zona+'</td><td>'+p.cat+'</td><td>'+p.linea+'</td><td style="color:#16803C;font-weight:700">€'+p.precio+'</td><td>'+p.fecha+'</td></tr>'; });
 
-  // Competition table
-  let compRows = '';
-  allCompItems.forEach(c => {
-    compRows += `<tr>
-      <td>${c.tienda}</td><td>${c.zona}</td><td>${c.cat}</td>
-      <td style="color:#B45309;font-weight:700">${c.marca||'—'}</td>
-      <td>${c.producto||'—'}</td>
-      <td style="font-weight:700">${c.precio?'€'+c.precio:'—'}</td>
-      <td>${c.nota||'—'}</td>
-      <td>${c.fecha}</td>
-    </tr>`;
-  });
+  // Build comp rows
+  var compRows = '';
+  allCompItems.forEach(function(c){ compRows += '<tr><td>'+c.tienda+'</td><td>'+c.zona+'</td><td>'+c.cat+'</td><td style="color:#B45309;font-weight:700">'+(c.marca||'—')+'</td><td>'+(c.producto||'—')+'</td><td style="font-weight:700">'+(c.precio?'€'+c.precio:'—')+'</td><td>'+(c.nota||'—')+'</td><td>'+c.fecha+'</td></tr>'; });
 
-  // Dist problems
-  let distRows = '';
-  distProblemas.forEach(d => {
-    distRows += `<tr>
-      <td>${d.fecha}</td>
-      <td><strong>${d.tienda}</strong></td>
-      <td>${d.zona}</td>
-      <td>${d.dist}</td>
-      <td style="color:${d.sat==='Insatisfecho'?'#B91C1C':d.sat==='Regular'?'#B45309':'#16803C'};font-weight:600">${d.sat}</td>
-      <td style="color:#B91C1C">${d.prob}</td>
-    </tr>`;
-  });
+  // Build dist problem rows
+  var distRows = '';
+  distProblemas.forEach(function(d){ distRows += '<div style="background:#FEF2F2;border-left:4px solid #EF4444;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px"><div style="font-weight:700;font-size:13px">'+d.tienda+' — '+d.dist+' — '+d.fecha+'</div><div style="font-size:12px;color:#374151"><strong>Satisfacción:</strong> '+d.sat+' &nbsp;|&nbsp; <strong>Zona:</strong> '+d.zona+'<br><strong>Problema:</strong> '+d.prob+'</div></div>'; });
 
-  // Acciones
-  let accionRows = '';
-  acciones.forEach(a => {
-    accionRows += `<tr><td>${a.fecha}</td><td><strong>${a.tienda}</strong></td><td>${a.accion}</td></tr>`;
-  });
+  // Build acciones
+  var accionRows = '';
+  acciones.forEach(function(a){ accionRows += '<tr><td>'+a.fecha+'</td><td><strong>'+a.tienda+'</strong></td><td>'+a.accion+'</td></tr>'; });
 
-  // Zonas summary
-  const zonaItems = Object.entries(zonas).sort((a,b)=>b[1]-a[1])
-    .map(([z,n])=>`<span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">${z}: ${n}</span>`).join(' ');
+  // Build zonas tags
+  var zonaItems = Object.entries(zonas).sort(function(a,b){return b[1]-a[1];}).map(function(e){ return '<span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">'+e[0]+': '+e[1]+'</span>'; }).join(' ');
 
-  // Dist summary
-  const distItems = Object.entries(distribuidores).sort((a,b)=>b[1]-a[1])
-    .map(([d,n])=>`<span style="background:#F0FDF4;color:#16803C;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">${d}: ${n} tiendas</span>`).join(' ');
+  // Build dist tags
+  var distItems = Object.entries(distribuidores).sort(function(a,b){return b[1]-a[1];}).map(function(e){ return '<span style="background:#F0FDF4;color:#16803C;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">'+e[0]+': '+e[1]+' tiendas</span>'; }).join(' ');
 
-  // Photos
-  let photosHtml = '';
-  visitsArr.forEach(v => {
-    let vPhotos = [];
-    CATS.forEach(cat => { (v.cats[cat.id]?.photos||[]).forEach(src => vPhotos.push({cat:cat.name,src})); });
-    if (vPhotos.length) {
-      photosHtml += `<div style="margin-bottom:20px">
-        <div style="font-size:13px;font-weight:700;color:#1A3C5C;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E2E5EA">${v.store.nombre} — ${v.isoDate||v.date} — ${v.store.zona||''}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px">
-          ${vPhotos.map(p=>`<div style="text-align:center"><img src="${p.src}" style="width:180px;height:135px;object-fit:cover;border-radius:8px;border:2px solid #E2E5EA"><div style="font-size:10px;color:#6B7280;margin-top:3px">${p.cat}</div></div>`).join('')}
-        </div>
-      </div>`;
+  // Build photos
+  var photosHtml = '';
+  visitsArr.forEach(function(v){
+    var vPhotos=[];
+    CATS.forEach(function(cat){(v.cats[cat.id]&&v.cats[cat.id].photos||[]).forEach(function(src){vPhotos.push({cat:cat.name,src:src});});});
+    if(vPhotos.length){
+      photosHtml += '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;color:#1A3C5C;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E2E5EA">'+v.store.nombre+' — '+(v.isoDate||v.date)+' — '+(v.store.zona||'')+'</div><div style="display:flex;flex-wrap:wrap;gap:10px">';
+      vPhotos.forEach(function(p){ photosHtml += '<div style="text-align:center"><img src="'+p.src+'" style="width:180px;height:135px;object-fit:cover;border-radius:8px;border:2px solid #E2E5EA"><div style="font-size:10px;color:#6B7280;margin-top:3px">'+p.cat+'</div></div>'; });
+      photosHtml += '</div></div>';
     }
   });
 
-  // ── FULL HTML REPORT ────────────────────────────────
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Informe de Relevamiento · Intertropico · ${rangeLabel}</title>
-<style>
-  *{box-sizing:border-box}
-  body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111;font-size:13px;line-height:1.5}
-  .page{max-width:960px;margin:0 auto;padding:32px 28px}
-  /* HEADER */
-  .report-header{background:#1A3C5C;color:#fff;padding:28px 32px;border-radius:12px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-start}
-  .rh-left h1{font-size:24px;font-weight:700;margin:0 0 6px}
-  .rh-left p{font-size:13px;opacity:.7;margin:0}
-  .rh-right{text-align:right}
-  .rh-badge{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600}
-  /* KPI CARDS */
-  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}
-  .kpi{background:#F4F5F7;border-radius:10px;padding:14px;text-align:center;border:1px solid #E2E5EA}
-  .kpi-val{font-size:28px;font-weight:700}
-  .kpi-lbl{font-size:10px;color:#6B7280;margin-top:3px;text-transform:uppercase;letter-spacing:.3px}
-  /* SECTION */
-  .section{margin-bottom:32px}
-  .section-title{font-size:15px;font-weight:700;color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:6px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-  /* TABLE */
-  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
-  th{background:#1A3C5C;color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap}
-  td{padding:7px 10px;border-bottom:1px solid #E2E5EA;vertical-align:top}
-  tr:nth-child(even) td{background:#F8F9FB}
-  tr:hover td{background:#EFF6FF}
-  /* ALERT BOXES */
-  .alert-red{background:#FEF2F2;border-left:4px solid #EF4444;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px}
-  .alert-green{background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px}
-  .alert-amber{background:#FFFBEB;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px}
-  .alert-title{font-weight:700;font-size:13px;margin-bottom:4px}
-  .alert-body{font-size:12px;color:#374151}
-  /* TAGS */
-  .tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}
-  /* PROGRESS BAR */
-  .progress-wrap{background:#E2E5EA;border-radius:4px;height:8px;margin-top:4px}
-  .progress-bar{height:8px;border-radius:4px;background:#1A3C5C}
-  /* FOOTER */
-  .footer{margin-top:40px;padding-top:16px;border-top:2px solid #E2E5EA;font-size:10px;color:#9CA3AF;text-align:center}
-  @media print{
-    .noprint{display:none}
-    body{padding:0}
-    .page{padding:20px}
-    .report-header{border-radius:0}
+  // Build conclusion bullets
+  var bullets = '';
+  bullets += '<li>Se visitaron <strong>'+visitsArr.length+' tiendas</strong> en el período '+rangeLabel+'.</li>';
+  bullets += '<li>Cobertura promedio de productos ITP: <strong>'+pct+'%</strong> ('+totalSi+' presentes / '+totalNo+' ausentes).</li>';
+  bullets += '<li>Se relevaron <strong>'+totalComp+' productos de la competencia</strong> en góndola.</li>';
+  if(distProblemas.length) bullets += '<li><strong>'+distProblemas.length+' tienda'+(distProblemas.length>1?'s':'')+' reportaron problemas con el distribuidor</strong> — requiere seguimiento urgente.</li>';
+  if(acciones.length) bullets += '<li><strong>'+acciones.length+' acción'+(acciones.length>1?'es':'')+' comercial'+(acciones.length>1?'es':'')+' pendiente'+(acciones.length>1?'s':'')+' de seguimiento.</strong></li>';
+  if(totalFotos>0) bullets += '<li><strong>'+totalFotos+' foto'+(totalFotos>1?'s':'')+' de góndola</strong> documentadas.</li>';
+
+  var CSS = 'body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111;font-size:13px;line-height:1.5}' +
+    '.page{max-width:960px;margin:0 auto;padding:32px 28px}' +
+    '.rh{background:#1A3C5C;color:#fff;padding:28px 32px;border-radius:12px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-start}' +
+    '.rh h1{font-size:22px;font-weight:700;margin:0 0 6px}.rh p{font-size:12px;opacity:.7;margin:0}' +
+    '.rh-r{text-align:right}.rh-b{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600}' +
+    '.kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}' +
+    '.k{background:#F4F5F7;border-radius:10px;padding:14px;text-align:center;border:1px solid #E2E5EA}' +
+    '.kv{font-size:26px;font-weight:700}.kl{font-size:10px;color:#6B7280;margin-top:3px;text-transform:uppercase}' +
+    '.sec{margin-bottom:28px}.st{font-size:15px;font-weight:700;color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:6px;margin-bottom:14px}' +
+    'table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}' +
+    'th{background:#1A3C5C;color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:600}' +
+    'td{padding:7px 10px;border-bottom:1px solid #E2E5EA;vertical-align:top}' +
+    'tr:nth-child(even)td{background:#F8F9FB}' +
+    '.ab{background:#FFFBEB;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:8px}' +
+    '.ag{background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:8px}' +
+    '.footer{margin-top:36px;padding-top:16px;border-top:2px solid #E2E5EA;font-size:10px;color:#9CA3AF;text-align:center}' +
+    '@media print{.noprint{display:none}.page{padding:20px}}';
+
+  var body = '<div class="page">';
+
+  // Header
+  body += '<div class="rh"><div><h1>Informe de Relevamiento de Mercado</h1>';
+  body += '<p>Intertropico · Canal tradicional · Barcelona &amp; Cataluña</p>';
+  body += '<p style="margin-top:6px;opacity:.9;font-size:14px;font-weight:600">Período: '+rangeLabel+'</p></div>';
+  body += '<div class="rh-r"><div class="rh-b">Generado el '+genDate+'</div>';
+  body += '<div style="margin-top:8px;font-size:12px;opacity:.6">Nicolás Brandam — Desarrollo Comercial</div>';
+  body += '<div style="margin-top:4px;font-size:11px;opacity:.5">CONFIDENCIAL</div></div></div>';
+
+  // KPIs
+  body += '<div class="kpi">';
+  body += '<div class="k"><div class="kv">'+visitsArr.length+'</div><div class="kl">Tiendas visitadas</div></div>';
+  body += '<div class="k"><div class="kv" style="color:#16803C">'+totalSi+'</div><div class="kl">ITP presentes</div></div>';
+  body += '<div class="k"><div class="kv" style="color:#B91C1C">'+totalNo+'</div><div class="kl">ITP ausentes</div></div>';
+  body += '<div class="k"><div class="kv" style="color:#B45309">'+totalComp+'</div><div class="kl">Competencia</div></div>';
+  body += '<div class="k"><div class="kv" style="color:#1D4ED8">'+pct+'%</div><div class="kl">Cobertura ITP</div></div>';
+  body += '</div>';
+
+  // Zonas
+  body += '<div class="sec"><div class="st">Cobertura geográfica y distribución</div>';
+  body += '<div style="margin-bottom:10px"><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Visitas por zona:</strong><br><div style="margin-top:6px">'+zonaItems+'</div></div>';
+  body += '<div><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Distribuidores:</strong><br><div style="margin-top:6px">'+distItems+'</div></div></div>';
+
+  // Stores table
+  body += '<div class="sec"><div class="st">Tiendas visitadas — detalle completo</div>';
+  body += '<table><thead><tr><th>Fecha</th><th>Tienda</th><th>Zona</th><th>Tipo</th><th>Distribuidor</th><th>Satisfacción</th><th>Frecuencia</th><th>ITP ✓</th><th>ITP ✗</th><th>Comp.</th><th>Teléfono</th><th>Próxima acción</th></tr></thead><tbody>'+storeRows+'</tbody></table></div>';
+
+  // Dist problems
+  body += '<div class="sec"><div class="st">Relación con distribuidores</div>';
+  if (distProblemas.length) {
+    body += distRows;
+    body += '<div style="background:#FFF7ED;border-radius:8px;padding:12px;margin-top:8px;font-size:12px"><strong>Nota para dirección:</strong> Los problemas de servicio con el distribuidor afectan directamente la presencia de productos ITP en tienda.</div>';
+  } else {
+    body += '<div class="ag"><strong>Sin quejas registradas en el período.</strong> Todos los clientes reportaron relación satisfactoria con su distribuidor.</div>';
   }
-</style>
-</head>
-<body>
-<div class="page">
+  body += '</div>';
 
-<!-- HEADER -->
-<div class="report-header">
-  <div class="rh-left">
-    <h1>&#x1F4CB; Informe de Relevamiento de Mercado</h1>
-    <p>Intertropico &middot; Canal tradicional &middot; Barcelona &amp; Cataluña</p>
-    <p style="margin-top:6px;opacity:.9;font-size:14px;font-weight:600">Per&iacute;odo: ${rangeLabel}</p>
-  </div>
-  <div class="rh-right">
-    <div class="rh-badge">&#x1F4C5; Generado el ${genDate}</div>
-    <div style="margin-top:8px;font-size:12px;opacity:.6">Nicol&aacute;s Brandam &mdash; Desarrollo Comercial</div>
-    <div style="margin-top:4px;font-size:11px;opacity:.5">CONFIDENCIAL</div>
-  </div>
-</div>
+  // Category presence
+  body += '<div class="sec"><div class="st">Presencia Intertropico / Morixe por categoría</div>';
+  body += '<table><thead><tr><th>Categoría</th><th>✓ Presente</th><th>✗ Ausente</th><th>Cobertura</th><th>Competencia principal</th></tr></thead><tbody>'+catRows+'</tbody></table></div>';
 
-<!-- KPIs -->
-<div class="kpi-grid">
-  <div class="kpi"><div class="kpi-val">${visitsArr.length}</div><div class="kpi-lbl">Tiendas visitadas</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:#16803C">${totalSi}</div><div class="kpi-lbl">Productos ITP presentes</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:#B91C1C">${totalNo}</div><div class="kpi-lbl">Productos ITP ausentes</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:#B45309">${totalComp}</div><div class="kpi-lbl">Competencia relevada</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:#1D4ED8">${pct}%</div><div class="kpi-lbl">Cobertura ITP promedio</div></div>
-</div>
+  // Prices
+  if (priceRows) {
+    body += '<div class="sec"><div class="st">Benchmark de precios ITP en góndola</div>';
+    body += '<table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoría</th><th>Producto / Formato</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>'+priceRows+'</tbody></table></div>';
+  }
 
-<!-- ZONAS Y DISTRIBUIDORES -->
-<div class="section">
-  <div class="section-title">&#x1F4CD; Cobertura geográfica y distribución</div>
-  <div style="margin-bottom:10px"><strong style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.3px">Visitas por zona:</strong><br><div style="margin-top:6px">${zonaItems}</div></div>
-  <div><strong style="font-size:12px;color:#6B7280;text-transform:uppercase;letter-spacing:.3px">Distribuidores activos:</strong><br><div style="margin-top:6px">${distItems}</div></div>
-</div>
+  // Competition
+  if (compRows) {
+    body += '<div class="sec"><div class="st">Competencia relevada por categoría y tienda</div>';
+    body += '<table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoría</th><th>Marca</th><th>Producto</th><th>Precio</th><th>Obs.</th><th>Fecha</th></tr></thead><tbody>'+compRows+'</tbody></table></div>';
+  }
 
-<!-- LISTADO DE TIENDAS -->
-<div class="section">
-  <div class="section-title">&#x1F3EA; Tiendas visitadas — detalle completo</div>
-  <table>
-    <thead><tr>
-      <th>Fecha</th><th>Tienda</th><th>Zona</th><th>Tipo</th>
-      <th>Distribuidor</th><th>Satisfacci&oacute;n</th><th>Frecuencia</th>
-      <th>&#x2713; ITP</th><th>&#x2717; ITP</th><th>Comp.</th>
-      <th>Tel&eacute;fono</th><th>Pr&oacute;xima acci&oacute;n</th>
-    </tr></thead>
-    <tbody>${storeRows}</tbody>
-  </table>
-</div>
+  // Actions
+  if (accionRows) {
+    body += '<div class="sec"><div class="st">Próximas acciones comerciales</div>';
+    body += '<table><thead><tr><th>Fecha</th><th>Tienda</th><th>Acción pendiente</th></tr></thead><tbody>'+accionRows+'</tbody></table></div>';
+  }
 
-<!-- RELACIÓN CON DISTRIBUIDORES -->
-${distProblemas.length ? `
-<div class="section">
-  <div class="section-title">&#x26A0;&#xFE0F; Problemas con distribuidores (${distProblemas.length})</div>
-  ${distProblemas.map(d=>`<div class="alert-red"><div class="alert-title">${d.tienda} &mdash; ${d.dist} &mdash; ${d.fecha}</div><div class="alert-body"><strong>Satisfacci&oacute;n:</strong> ${d.sat} &nbsp;|&nbsp; <strong>Zona:</strong> ${d.zona}<br><strong>Problema:</strong> ${d.prob}</div></div>`).join('')}
-  <div style="background:#FFF7ED;border-radius:8px;padding:14px;margin-top:8px;font-size:12px">
-    <strong>Nota para direcci&oacute;n:</strong> Los problemas de servicio con el distribuidor afectan directamente la presencia de productos ITP en tienda.
-    Se recomienda revisar los acuerdos de nivel de servicio (SLA) con los distribuidores mencionados.
-  </div>
-</div>` : `<div class="section"><div class="section-title">&#x1F44D; Relaci&oacute;n con distribuidores</div><div class="alert-green"><div class="alert-title">Sin quejas registradas en el per&iacute;odo</div><div class="alert-body">Todos los clientes visitados reportaron una relaci&oacute;n satisfactoria con su distribuidor.</div></div></div>`}
+  // Photos
+  if (photosHtml) {
+    body += '<div class="sec"><div class="st">Registro fotográfico de góndola</div>'+photosHtml+'</div>';
+  }
 
-<!-- PRESENCIA ITP POR CATEGORÍA -->
-<div class="section">
-  <div class="section-title">&#x1F4CA; Presencia Intertropico / Morixe por categor&iacute;a</div>
-  <table>
-    <thead><tr>
-      <th>Categor&iacute;a</th>
-      <th>&#x2713; Presente</th>
-      <th>&#x2717; Ausente</th>
-      <th>Cobertura</th>
-      <th>Competencia principal vista</th>
-    </tr></thead>
-    <tbody>${catRows}</tbody>
-  </table>
-</div>
+  // Summary
+  body += '<div class="sec"><div class="st">Resumen ejecutivo del período</div>';
+  body += '<div class="ab"><strong style="font-size:13px">Hallazgos principales:</strong><ul style="margin:8px 0 0 16px;font-size:12px;line-height:1.8">'+bullets+'</ul></div></div>';
 
-<!-- BENCHMARK DE PRECIOS ITP -->
-${priceRows ? `
-<div class="section">
-  <div class="section-title">&#x1F4B0; Benchmark de precios ITP en g&oacute;ndola</div>
-  <table>
-    <thead><tr><th>Tienda</th><th>Zona</th><th>Categor&iacute;a</th><th>Producto / Formato</th><th>Precio</th><th>Fecha</th></tr></thead>
-    <tbody>${priceRows}</tbody>
-  </table>
-</div>` : ''}
+  body += '<div class="footer">Intertropico · Desarrollo Comercial Cataluña 2026 · Nicolás Brandam — CONFIDENCIAL<br>Generado el '+genDate+' desde la app de campo</div>';
+  body += '</div>';
 
-<!-- COMPETENCIA RELEVADA -->
-${compRows ? `
-<div class="section">
-  <div class="section-title">&#x1F3EA; Competencia relevada por categor&iacute;a y tienda</div>
-  <table>
-    <thead><tr><th>Tienda</th><th>Zona</th><th>Categor&iacute;a</th><th>Marca</th><th>Producto</th><th>Precio</th><th>Observaci&oacute;n</th><th>Fecha</th></tr></thead>
-    <tbody>${compRows}</tbody>
-  </table>
-</div>` : ''}
+  // Print button
+  body += '<div class="noprint" style="text-align:center;padding:24px;background:#F4F5F7">';
+  body += '<button onclick="window.print()" style="padding:14px 32px;background:#1A3C5C;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">Imprimir / Guardar PDF</button>';
+  body += '<button onclick="window.close()" style="padding:14px 24px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button></div>';
 
-<!-- PRÓXIMAS ACCIONES -->
-${accionRows ? `
-<div class="section">
-  <div class="section-title">&#x2705; Pr&oacute;ximas acciones comerciales</div>
-  <table>
-    <thead><tr><th>Fecha visita</th><th>Tienda</th><th>Acci&oacute;n pendiente</th></tr></thead>
-    <tbody>${accionRows}</tbody>
-  </table>
-</div>` : ''}
+  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rangeLabel+'</title><style>'+CSS+'</style></head><body>'+body+'</body></html>';
 
-<!-- FOTOS DE GÓNDOLA -->
-${photosHtml ? `
-<div class="section">
-  <div class="section-title">&#x1F4F7; Registro fotogr&aacute;fico de g&oacute;ndola</div>
-  ${photosHtml}
-</div>` : ''}
-
-<!-- CONCLUSIONES -->
-<div class="section">
-  <div class="section-title">&#x1F4DD; Resumen ejecutivo del per&iacute;odo</div>
-  <div class="alert-amber">
-    <div class="alert-title">Hallazgos principales</div>
-    <div class="alert-body">
-      &bull; Se visitaron <strong>${visitsArr.length} tiendas</strong> en el per&iacute;odo ${rangeLabel}.<br>
-      &bull; Cobertura promedio de productos ITP: <strong>${pct}%</strong> (${totalSi} presentes / ${totalNo} ausentes).<br>
-      &bull; Se relevaron <strong>${totalComp} productos de la competencia</strong> en g&oacute;ndola.<br>
-      ${distProblemas.length ? `&bull; <strong>${distProblemas.length} tienda${distProblemas.length>1?'s':''}</strong> reportaron problemas con el distribuidor — requiere seguimiento urgente.<br>` : ''}
-      ${acciones.length ? `&bull; <strong>${acciones.length} acci&oacute;n${acciones.length>1?'es':''}</strong> comercial${acciones.length>1?'es':''} pendiente${acciones.length>1?'s':''}.<br>` : ''}
-      ${totalFotos > 0 ? `&bull; <strong>${totalFotos} foto${totalFotos>1?'s':''}</strong> de g&oacute;ndola documentadas.<br>` : ''}
-    </div>
-  </div>
-</div>
-
-<div class="footer">
-  Intertropico &middot; Desarrollo Comercial Catalu&ntilde;a 2026 &middot; Nicol&aacute;s Brandam &mdash; CONFIDENCIAL<br>
-  Generado el ${genDate} desde la app de campo
-</div>
-
-</div><!-- /page -->
-
-<div class="noprint" style="text-align:center;padding:24px;background:#F4F5F7;margin-top:0">
-  <button onclick="window.print()" style="padding:14px 32px;background:#1A3C5C;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">
-    &#x1F5A8;&#xFE0F; Imprimir / Guardar PDF
-  </button>
-  <button onclick="window.close()" style="padding:14px 24px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
-    Cerrar
-  </button>
-</div>
-
-</body>
-</html>`;
-
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const filename = desde === hasta
-    ? 'informe_itp_'+desde+'.html'
-    : 'informe_itp_'+desde+'_al_'+hasta+'.html';
+  var blob = new Blob([htm], {type:'text/html;charset=utf-8'});
+  var burl = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = burl;
+  var filename = desde===hasta ? 'informe_itp_'+desde+'.html' : 'informe_itp_'+desde+'_al_'+hasta+'.html';
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
-  toast('📄 Informe generado — abrilo y guardá como PDF', 4000);
+  URL.revokeObjectURL(burl);
+  toast('Informe generado — abrilo y guardá como PDF', 4000);
 }
-
 // Keep old genInformeDia as alias for today
 function genInformeDia() {
   openInformeModal();
