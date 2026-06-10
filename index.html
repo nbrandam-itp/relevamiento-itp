@@ -129,26 +129,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 .dstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .ds2{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:10px;text-align:center}
 .ds2-v{font-size:20px;font-weight:700;color:var(--accent)}.ds2-l{font-size:10px;color:var(--muted);margin-top:2px}
-
-/* INFORME MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:none;align-items:flex-end;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(24px + var(--safe-bottom));animation:slideUp .25s ease}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-title{font-size:17px;font-weight:700;color:var(--brand);margin-bottom:4px}
-.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
-.date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.date-field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
-.date-field input{width:100%;font-size:15px;padding:11px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-appearance:none}
-.date-field input:focus{outline:none;border-color:var(--brand)}
-.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
-.qbtn{padding:10px;border:1.5px solid var(--border);border-radius:9px;background:transparent;color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center}
-.qbtn:active{background:var(--bg)}
-.modal-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
-.btn-cancel{padding:13px;border:1.5px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-generar{padding:13px;border:none;border-radius:var(--radius);background:var(--brand);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-generar:active{opacity:.85}
-
 </style>
 </head>
 <body>
@@ -294,9 +274,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 <div class="screen" id="s-rd">
   <div class="topbar">
     <button class="tb-back" onclick="go('s-home')">&#x2190;</button>
-    <div style="flex:1"><div class="tb-title">Historial de visitas</div></div>
-    <button class="tb-btn2" style="margin-right:4px" onclick="openInformeModal()">&#x1F4C4; Informe</button>
-    <button class="tb-btn" onclick="syncAll()">&#x2601;&#xFE0F; Sync</button>
+    <div style="flex:1"><div class="tb-title">Resumen del d&iacute;a</div></div>
+    <button class="tb-btn2" onclick="genInformeDia()">&#x1F4C4;</button>
+    <button class="tb-btn" style="margin-left:4px" onclick="syncAll()">&#x2601;&#xFE0F; Sync</button>
   </div>
   <div class="scroll"><div id="rd-content"></div></div>
 </div>
@@ -568,26 +548,7 @@ async function saveCloud(){
 }
 async function syncDet(){const v=visits.find(v=>v.id===detId);if(!v)return;toast('⏳...',4000);const ok=await push(v);if(ok){v.synced=true;save();renderHome();toast('✅ Sincronizado',3000);renderSum(v,'det-content');}else toast('⚠️ Sin conexión',3000);}
 async function syncAll(){const p=visits.filter(v=>!v.synced);if(!p.length){toast('✅ Todo sync');return;}toast('⏳ Sincronizando '+p.length+'...',5000);let ok=0;for(const v of p){if(await push(v)){v.synced=true;ok++;}}save();renderHome();renderRd();toast('✅ '+ok+'/'+p.length,3000);}
-function saveLocal(){
-  if(!currentV){toast('⚠️ Error: sin visita activa');return;}
-  try{
-    // Save notes from form if still on cats screen
-    const ng=document.getElementById('f-notas-gen');
-    const cg=document.getElementById('f-comp-gen');
-    if(ng)currentV.store.notas=ng.value;
-    if(cg)currentV.store.comp=cg.value;
-    const i=visits.findIndex(v=>v.id===currentV.id);
-    if(i>=0)visits[i]=currentV;else visits.unshift(currentV);
-    save();
-    const saved=JSON.parse(localStorage.getItem('itp_v5')||'[]');
-    if(saved.length>0){
-      currentV=null;renderHome();go('s-home');
-      toast('💾 Guardado — '+saved.length+' visita(s) en total');
-    }else{
-      toast('❌ Error al guardar — revisar almacenamiento');
-    }
-  }catch(e){toast('❌ Error: '+e.message);}
-}
+function saveLocal(){if(!currentV)return;const i=visits.findIndex(v=>v.id===currentV.id);if(i>=0)visits[i]=currentV;else visits.unshift(currentV);save();currentV=null;renderHome();go('s-home');toast('💾 Guardado local');}
 function delCurrent(){if(!confirm('¿Borrar?'))return;visits=visits.filter(v=>v.id!==currentV.id);save();currentV=null;renderHome();go('s-home');}
 function delDet(){if(!confirm('¿Borrar?'))return;visits=visits.filter(v=>v.id!==detId);save();renderHome();go('s-home');}
 function editV(){const v=visits.find(v=>v.id===detId);if(!v)return;currentV=JSON.parse(JSON.stringify(v));currentV.synced=false;document.getElementById('f-nombre').value=v.store.nombre;document.getElementById('f-dir').value=v.store.dir||'';document.getElementById('f-zona').value=v.store.zona||'';document.getElementById('f-tel').value=v.store.tel||'';document.getElementById('f-tipo').value=v.store.tipo||'';document.getElementById('f-size').value=v.store.size||'';document.getElementById('f-dist').value=v.store.dist||'';document.getElementById('f-sat').value=v.store.sat||'';document.getElementById('f-freq').value=v.store.freq||'';document.getElementById('f-prob').value=v.store.prob||'';document.getElementById('f-notas').value=v.store.notas||'';document.getElementById('f-accion').value=v.store.accion||'';document.getElementById('cats-nombre').textContent=v.store.nombre;renderCatList();go('s-cats');}
@@ -684,27 +645,7 @@ function genInforme(v){
   });
   const mL=v.store.lat?'<a href="https://www.google.com/maps?q='+v.store.lat+','+v.store.lng+'" target="_blank" style="color:#1D4ED8">Ver en Google Maps</a>':'';
   const siN=(siR.match(/<tr>/g)||[]).length,noN=(noR.match(/<tr>/g)||[]).length,cN=(cR.match(/<tr>/g)||[]).length,phN=(phH.match(/img src/g)||[]).length;
-  const htm='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe · '+v.store.nombre+' · '+v.date+'</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#111;font-size:13px}h1{color:#1A3C5C;margin:0;font-size:22px}h2{color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:5px;margin-top:24px;font-size:15px}.hd{background:#1A3C5C;color:#fff;padding:18px 22px;border-radius:10px;margin-bottom:20px}.hd-s{font-size:12px;opacity:.7;margin-top:4px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}.mc{background:#F4F5F7;border-radius:8px;padding:10px 12px}.ml{font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:3px}.mv{font-size:13px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.sc{background:#F4F5F7;border-radius:8px;padding:12px;text-align:center}.sv{font-size:24px;font-weight:700}.sl{font-size:10px;color:#6B7280;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th{background:#1A3C5C;color:#fff;padding:7px 9px;text-align:left;font-size:11px}td{padding:6px 9px;border-bottom:1px solid #E2E5EA}tr:nth-child(even)td{background:#F8F9FB}.warn{background:#FFF7ED;border:2px solid #FED7AA;border-radius:8px;padding:12px;margin:12px 0}.acc{background:#F0FDF4;border:2px solid #86EFAC;border-radius:8px;padding:12px;margin:12px 0}.footer{margin-top:36px;padding-top:14px;border-top:2px solid #E2E5EA;font-size:10px;color:#6B7280;text-align:center}@media print{.np{display:none}}
-/* INFORME MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:none;align-items:flex-end;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(24px + var(--safe-bottom));animation:slideUp .25s ease}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-title{font-size:17px;font-weight:700;color:var(--brand);margin-bottom:4px}
-.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
-.date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.date-field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
-.date-field input{width:100%;font-size:15px;padding:11px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-appearance:none}
-.date-field input:focus{outline:none;border-color:var(--brand)}
-.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
-.qbtn{padding:10px;border:1.5px solid var(--border);border-radius:9px;background:transparent;color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center}
-.qbtn:active{background:var(--bg)}
-.modal-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
-.btn-cancel{padding:13px;border:1.5px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-generar{padding:13px;border:none;border-radius:var(--radius);background:var(--brand);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-generar:active{opacity:.85}
-
-</style></head><body>'+
+  const htm='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe · '+v.store.nombre+' · '+v.date+'</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#111;font-size:13px}h1{color:#1A3C5C;margin:0;font-size:22px}h2{color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:5px;margin-top:24px;font-size:15px}.hd{background:#1A3C5C;color:#fff;padding:18px 22px;border-radius:10px;margin-bottom:20px}.hd-s{font-size:12px;opacity:.7;margin-top:4px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}.mc{background:#F4F5F7;border-radius:8px;padding:10px 12px}.ml{font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:3px}.mv{font-size:13px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.sc{background:#F4F5F7;border-radius:8px;padding:12px;text-align:center}.sv{font-size:24px;font-weight:700}.sl{font-size:10px;color:#6B7280;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th{background:#1A3C5C;color:#fff;padding:7px 9px;text-align:left;font-size:11px}td{padding:6px 9px;border-bottom:1px solid #E2E5EA}tr:nth-child(even)td{background:#F8F9FB}.warn{background:#FFF7ED;border:2px solid #FED7AA;border-radius:8px;padding:12px;margin:12px 0}.acc{background:#F0FDF4;border:2px solid #86EFAC;border-radius:8px;padding:12px;margin:12px 0}.footer{margin-top:36px;padding-top:14px;border-top:2px solid #E2E5EA;font-size:10px;color:#6B7280;text-align:center}@media print{.np{display:none}}</style></head><body>'+
   '<div class="hd"><h1>📋 Informe de Visita · Intertropico</h1><div class="hd-s">'+v.store.nombre+' · '+v.date+' · '+(v.store.zona||'')+'</div></div>'+
   '<div class="meta"><div class="mc"><div class="ml">Tienda</div><div class="mv">'+v.store.nombre+'</div></div><div class="mc"><div class="ml">Dirección</div><div class="mv">'+(v.store.dir||v.store.geoAddr||'—')+' '+mL+'</div></div><div class="mc"><div class="ml">Zona</div><div class="mv">'+(v.store.zona||'—')+'</div></div><div class="mc"><div class="ml">Tipo · Tamaño</div><div class="mv">'+(v.store.tipo||'—')+(v.store.size?' · '+v.store.size:'')+'</div></div><div class="mc"><div class="ml">Distribuidor</div><div class="mv">'+(v.store.dist||'—')+'</div></div><div class="mc"><div class="ml">Satisfacción · Frecuencia</div><div class="mv">'+(v.store.sat||'—')+(v.store.freq?' · '+v.store.freq:'')+'</div></div><div class="mc"><div class="ml">Teléfono</div><div class="mv">'+(v.store.tel||'—')+'</div></div><div class="mc"><div class="ml">GPS</div><div class="mv">'+(v.store.lat?v.store.lat.toFixed(5)+', '+v.store.lng.toFixed(5):'—')+'</div></div></div>'+
   '<div class="stats"><div class="sc"><div class="sv" style="color:#16803C">'+siN+'</div><div class="sl">✓ ITP presentes</div></div><div class="sc"><div class="sv" style="color:#B91C1C">'+noN+'</div><div class="sl">✗ ITP ausentes</div></div><div class="sc"><div class="sv" style="color:#B45309">'+cN+'</div><div class="sl">🏪 Competencia</div></div><div class="sc"><div class="sv" style="color:#0369A1">'+phN+'</div><div class="sl">📷 Fotos</div></div></div>'+
@@ -719,31 +660,7 @@ function genInforme(v){
   (phH?'<h2>📷 Fotos de góndola</h2>'+phH:'')+
   '<div class="footer">Intertropico · Auditoría de mercado Cataluña 2026 · '+v.date+' · CONFIDENCIAL</div>'+
   '<div class="np" style="margin-top:20px;text-align:center"><button onclick="window.print()" style="padding:12px 28px;background:#1A3C5C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">🖨️ Imprimir / Guardar PDF</button></div>'+
-  '
-<!-- INFORME DATE PICKER MODAL -->
-<div class="modal-overlay" id="informe-modal" onclick="closeInformeModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-title">&#x1F4C4; Generar informe de visitas</div>
-    <div class="modal-sub">Seleccioná el per&iacute;odo que quer&eacute;s incluir en el informe</div>
-    <div class="date-row">
-      <div class="date-field"><label>Desde</label><input type="date" id="inf-desde"></div>
-      <div class="date-field"><label>Hasta</label><input type="date" id="inf-hasta"></div>
-    </div>
-    <div class="quick-btns">
-      <button class="qbtn" onclick="setQuickDate('hoy')">&#x1F4C5; Hoy</button>
-      <button class="qbtn" onclick="setQuickDate('ayer')">&#x23F0; Ayer</button>
-      <button class="qbtn" onclick="setQuickDate('semana')">&#x1F4C6; Esta semana</button>
-      <button class="qbtn" onclick="setQuickDate('todo')">&#x1F4CB; Todo el historial</button>
-    </div>
-    <div id="informe-preview" style="font-size:12px;color:var(--muted);margin-bottom:16px;min-height:18px"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeInformeModal()">Cancelar</button>
-      <button class="btn-generar" onclick="confirmarInforme()">&#x1F4C4; Generar informe PDF</button>
-    </div>
-  </div>
-</div>
-
-</body></html>';
+  '</body></html>';
   const blob=new Blob([htm],{type:'text/html;charset=utf-8'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='informe_'+(v.store.nombre||'tienda').replace(/\s+/g,'_')+'_'+v.date.replace(/\//g,'-')+'.html';a.click();URL.revokeObjectURL(u);
   toast('📄 Abrí el archivo → Imprimir → Guardar PDF',4000);
 }
@@ -761,27 +678,7 @@ function genInformeDia(){
     if(v.store.accion)acH+='<div style="margin-bottom:6px;padding:8px 12px;border-left:4px solid #86EFAC;background:#F0FDF4;border-radius:0 6px 6px 0"><strong>'+v.store.nombre+':</strong> '+v.store.accion+'</div>';
   });
   const fecha=new Date().toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const htm='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe Diario · '+today+'</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:0 auto;padding:24px;color:#111;font-size:13px}h1{color:#1A3C5C;margin:0;font-size:22px}h2{color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:5px;margin-top:24px;font-size:15px}.hd{background:#1A3C5C;color:#fff;padding:18px 22px;border-radius:10px;margin-bottom:20px}.hd-s{font-size:12px;opacity:.7;margin-top:4px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.sc{background:#F4F5F7;border-radius:8px;padding:12px;text-align:center}.sv{font-size:24px;font-weight:700}.sl{font-size:10px;color:#6B7280;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th{background:#1A3C5C;color:#fff;padding:7px 9px;text-align:left;font-size:11px}td{padding:6px 9px;border-bottom:1px solid #E2E5EA}tr:nth-child(even)td{background:#F8F9FB}.footer{margin-top:36px;padding-top:14px;border-top:2px solid #E2E5EA;font-size:10px;color:#6B7280;text-align:center}@media print{.np{display:none}}
-/* INFORME MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:none;align-items:flex-end;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal-sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px calc(24px + var(--safe-bottom));animation:slideUp .25s ease}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-title{font-size:17px;font-weight:700;color:var(--brand);margin-bottom:4px}
-.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
-.date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.date-field label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
-.date-field input{width:100%;font-size:15px;padding:11px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-appearance:none}
-.date-field input:focus{outline:none;border-color:var(--brand)}
-.quick-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
-.qbtn{padding:10px;border:1.5px solid var(--border);border-radius:9px;background:transparent;color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center}
-.qbtn:active{background:var(--bg)}
-.modal-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
-.btn-cancel{padding:13px;border:1.5px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-generar{padding:13px;border:none;border-radius:var(--radius);background:var(--brand);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-generar:active{opacity:.85}
-
-</style></head><body>'+
+  const htm='<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe Diario · '+today+'</title><style>body{font-family:Arial,sans-serif;max-width:960px;margin:0 auto;padding:24px;color:#111;font-size:13px}h1{color:#1A3C5C;margin:0;font-size:22px}h2{color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:5px;margin-top:24px;font-size:15px}.hd{background:#1A3C5C;color:#fff;padding:18px 22px;border-radius:10px;margin-bottom:20px}.hd-s{font-size:12px;opacity:.7;margin-top:4px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.sc{background:#F4F5F7;border-radius:8px;padding:12px;text-align:center}.sv{font-size:24px;font-weight:700}.sl{font-size:10px;color:#6B7280;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}th{background:#1A3C5C;color:#fff;padding:7px 9px;text-align:left;font-size:11px}td{padding:6px 9px;border-bottom:1px solid #E2E5EA}tr:nth-child(even)td{background:#F8F9FB}.footer{margin-top:36px;padding-top:14px;border-top:2px solid #E2E5EA;font-size:10px;color:#6B7280;text-align:center}@media print{.np{display:none}}</style></head><body>'+
   '<div class="hd"><h1>📋 Informe Diario · Intertropico</h1><div class="hd-s">'+fecha+' · '+dv.length+' tiendas · Nicolás Brandam · Cataluña</div></div>'+
   '<div class="stats"><div class="sc"><div class="sv">'+dv.length+'</div><div class="sl">Tiendas</div></div><div class="sc"><div class="sv" style="color:#16803C">'+tSi+'</div><div class="sl">✓ ITP</div></div><div class="sc"><div class="sv" style="color:#B91C1C">'+tNo+'</div><div class="sl">✗ ITP</div></div><div class="sc"><div class="sv" style="color:#B45309">'+tC+'</div><div class="sl">🏪 Comp.</div></div></div>'+
   '<h2>Tiendas relevadas</h2><table><thead><tr><th>Tienda</th><th>Zona</th><th>Distribuidor</th><th>Satisfacción</th><th>✓ ITP</th><th>✗ ITP</th><th>🏪</th><th>Próxima acción</th></tr></thead><tbody>'+stR+'</tbody></table>'+
@@ -791,351 +688,12 @@ function genInformeDia(){
   (phH?'<h2>📷 Fotos de góndola</h2>'+phH:'')+
   '<div class="footer">Intertropico · Cataluña 2026 · '+today+' · CONFIDENCIAL</div>'+
   '<div class="np" style="margin-top:20px;text-align:center"><button onclick="window.print()" style="padding:12px 28px;background:#1A3C5C;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">🖨️ Imprimir / Guardar PDF</button></div>'+
-  '
-<!-- INFORME DATE PICKER MODAL -->
-<div class="modal-overlay" id="informe-modal" onclick="closeInformeModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-title">&#x1F4C4; Generar informe de visitas</div>
-    <div class="modal-sub">Seleccioná el per&iacute;odo que quer&eacute;s incluir en el informe</div>
-    <div class="date-row">
-      <div class="date-field"><label>Desde</label><input type="date" id="inf-desde"></div>
-      <div class="date-field"><label>Hasta</label><input type="date" id="inf-hasta"></div>
-    </div>
-    <div class="quick-btns">
-      <button class="qbtn" onclick="setQuickDate('hoy')">&#x1F4C5; Hoy</button>
-      <button class="qbtn" onclick="setQuickDate('ayer')">&#x23F0; Ayer</button>
-      <button class="qbtn" onclick="setQuickDate('semana')">&#x1F4C6; Esta semana</button>
-      <button class="qbtn" onclick="setQuickDate('todo')">&#x1F4CB; Todo el historial</button>
-    </div>
-    <div id="informe-preview" style="font-size:12px;color:var(--muted);margin-bottom:16px;min-height:18px"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeInformeModal()">Cancelar</button>
-      <button class="btn-generar" onclick="confirmarInforme()">&#x1F4C4; Generar informe PDF</button>
-    </div>
-  </div>
-</div>
-
-</body></html>';
+  '</body></html>';
   const blob=new Blob([htm],{type:'text/html;charset=utf-8'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='informe_diario_'+today+'.html';a.click();URL.revokeObjectURL(u);
   toast('📄 Informe del día generado',3000);
 }
 
-
-// ════════════════════════════════════════════════════════
-// INFORME CON SELECTOR DE FECHAS
-// ════════════════════════════════════════════════════════
-
-function openInformeModal() {
-  // Default: esta semana
-  setQuickDate('semana');
-  document.getElementById('informe-modal').classList.add('open');
-}
-
-function closeInformeModal(e) {
-  if (e && e.target !== document.getElementById('informe-modal')) return;
-  document.getElementById('informe-modal').classList.remove('open');
-}
-
-function setQuickDate(preset) {
-  const today = new Date();
-  const fmt = d => d.toISOString().slice(0,10);
-  let desde, hasta;
-  if (preset === 'hoy') {
-    desde = hasta = fmt(today);
-  } else if (preset === 'ayer') {
-    const y = new Date(today); y.setDate(y.getDate()-1);
-    desde = hasta = fmt(y);
-  } else if (preset === 'semana') {
-    const mon = new Date(today);
-    mon.setDate(today.getDate() - today.getDay() + (today.getDay()===0?-6:1));
-    desde = fmt(mon); hasta = fmt(today);
-  } else if (preset === 'todo') {
-    const dates = visits.map(v=>v.isoDate||'').filter(Boolean).sort();
-    desde = dates[0] || fmt(today);
-    hasta = fmt(today);
-  }
-  document.getElementById('inf-desde').value = desde;
-  document.getElementById('inf-hasta').value = hasta;
-  updateInformePreview();
-}
-
-function updateInformePreview() {
-  const desde = document.getElementById('inf-desde').value;
-  const hasta = document.getElementById('inf-hasta').value;
-  if (!desde || !hasta) return;
-  const filtered = visits.filter(v => {
-    const d = v.isoDate || '';
-    return d >= desde && d <= hasta;
-  });
-  const prev = document.getElementById('informe-preview');
-  if (filtered.length === 0) {
-    prev.textContent = '⚠️ Sin visitas en ese período';
-    prev.style.color = 'var(--red)';
-  } else {
-    prev.textContent = '✓ ' + filtered.length + ' visita' + (filtered.length>1?'s':'') + ' encontrada' + (filtered.length>1?'s':'');
-    prev.style.color = 'var(--green)';
-  }
-}
-
-function confirmarInforme() {
-  const desde = document.getElementById('inf-desde').value;
-  const hasta = document.getElementById('inf-hasta').value;
-  if (!desde || !hasta) { toast('⚠️ Seleccioná las fechas'); return; }
-  const filtered = visits.filter(v => {
-    const d = v.isoDate || '';
-    return d >= desde && d <= hasta;
-  });
-  if (!filtered.length) { toast('⚠️ Sin visitas en ese período'); return; }
-  document.getElementById('informe-modal').classList.remove('open');
-  genInformeCompleto(filtered, desde, hasta);
-}
-
-// ════════════════════════════════════════════════════════
-// GENERADOR DE INFORME COMPLETO PARA DIRECCIÓN
-// ════════════════════════════════════════════════════════
-
-function genInformeCompleto(visitsArr, desde, hasta) {
-  toast('Generando informe...', 3000);
-
-  var totalSi=0, totalNo=0, totalComp=0, totalFotos=0;
-  var zonas={}, distribuidores={}, distProblemas=[], acciones=[];
-  var allCompItems=[], allPrices=[], allSiItems=[], allNoItems=[];
-  var catPresencia={};
-  CATS.forEach(function(c){ catPresencia[c.name]={si:0,no:0,comp:[]}; });
-
-  visitsArr.forEach(function(v) {
-    var z = v.store.zona || 'Sin zona';
-    zonas[z] = (zonas[z]||0) + 1;
-    var d = v.store.dist || 'Sin distribuidor';
-    distribuidores[d] = (distribuidores[d]||0) + 1;
-    if (v.store.prob) distProblemas.push({tienda:v.store.nombre, zona:v.store.zona||'—', dist:v.store.dist||'—', sat:v.store.sat||'—', prob:v.store.prob, fecha:v.isoDate||v.date});
-    if (v.store.accion) acciones.push({tienda:v.store.nombre, accion:v.store.accion, fecha:v.isoDate||v.date});
-    CATS.forEach(function(cat) {
-      var cs = v.cats[cat.id]; if (!cs) return;
-      cat.brands.forEach(function(b) {
-        var val = cs.brands[b];
-        if (val==='si'){totalSi++;catPresencia[cat.name].si++;allSiItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,marca:b,fecha:v.isoDate||v.date});}
-        else if (val==='no'){totalNo++;catPresencia[cat.name].no++;allNoItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,marca:b,fecha:v.isoDate||v.date});}
-      });
-      cat.prices.forEach(function(l){ if(cs.prices[l]) allPrices.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,linea:l,precio:cs.prices[l],fecha:v.isoDate||v.date}); });
-      cs.comps.forEach(function(c2){ if(c2.marca||c2.producto){totalComp++;catPresencia[cat.name].comp.push(c2.marca||'—');allCompItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.name,marca:c2.marca||'',producto:c2.producto||'',precio:c2.precio||'',nota:c2.nota||'',fecha:v.isoDate||v.date});} });
-      totalFotos += cs.photos.length;
-    });
-  });
-
-  var fmtDate = function(iso){ var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
-  var rangeLabel = desde===hasta ? fmtDate(desde) : fmtDate(desde)+' al '+fmtDate(hasta);
-  var genDate = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
-  var pct = (totalSi+totalNo)>0 ? Math.round(totalSi/(totalSi+totalNo)*100) : 0;
-
-  // Build store rows
-  var storeRows = '';
-  visitsArr.slice().sort(function(a,b){return (a.isoDate||'').localeCompare(b.isoDate||'');}).forEach(function(v){
-    var si=0,no=0,comp=0;
-    CATS.forEach(function(cat){var cs=v.cats[cat.id];if(!cs)return;Object.values(cs.brands).forEach(function(val){if(val==='si')si++;else if(val==='no')no++;});comp+=cs.comps.length;});
-    var satColor = (v.store.sat==='Muy contento'||v.store.sat==='Contento') ? '#16803C' : v.store.sat==='Insatisfecho' ? '#B91C1C' : '#B45309';
-    storeRows += '<tr><td>'+(v.isoDate||v.date)+'</td><td><strong>'+v.store.nombre+'</strong></td><td>'+(v.store.zona||'—')+'</td><td>'+(v.store.tipo||'—')+'</td><td>'+(v.store.dist||'—')+'</td><td style="color:'+satColor+';font-weight:600">'+(v.store.sat||'—')+'</td><td>'+(v.store.freq||'—')+'</td><td style="color:#16803C;font-weight:700">'+si+'</td><td style="color:#B91C1C;font-weight:700">'+no+'</td><td style="color:#B45309">'+comp+'</td><td>'+(v.store.tel||'—')+'</td><td>'+(v.store.accion||'—')+'</td></tr>';
-  });
-
-  // Build category rows
-  var catRows = '';
-  CATS.forEach(function(cat){
-    var cp=catPresencia[cat.name];
-    var total=cp.si+cp.no;
-    var pct2=total>0?Math.round(cp.si/total*100):0;
-    var compMarcas=[...new Set(cp.comp)].slice(0,5).join(', ');
-    var color=pct2>=70?'#16803C':pct2>=30?'#B45309':'#B91C1C';
-    catRows += '<tr><td><strong>'+cat.name+'</strong></td><td style="color:#16803C;font-weight:700">'+cp.si+'</td><td style="color:#B91C1C;font-weight:700">'+cp.no+'</td><td style="color:'+color+';font-weight:700">'+pct2+'%</td><td style="color:#B45309">'+(compMarcas||'—')+'</td></tr>';
-  });
-
-  // Build price rows
-  var priceRows = '';
-  allPrices.forEach(function(p){ priceRows += '<tr><td>'+p.tienda+'</td><td>'+p.zona+'</td><td>'+p.cat+'</td><td>'+p.linea+'</td><td style="color:#16803C;font-weight:700">€'+p.precio+'</td><td>'+p.fecha+'</td></tr>'; });
-
-  // Build comp rows
-  var compRows = '';
-  allCompItems.forEach(function(c){ compRows += '<tr><td>'+c.tienda+'</td><td>'+c.zona+'</td><td>'+c.cat+'</td><td style="color:#B45309;font-weight:700">'+(c.marca||'—')+'</td><td>'+(c.producto||'—')+'</td><td style="font-weight:700">'+(c.precio?'€'+c.precio:'—')+'</td><td>'+(c.nota||'—')+'</td><td>'+c.fecha+'</td></tr>'; });
-
-  // Build dist problem rows
-  var distRows = '';
-  distProblemas.forEach(function(d){ distRows += '<div style="background:#FEF2F2;border-left:4px solid #EF4444;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px"><div style="font-weight:700;font-size:13px">'+d.tienda+' — '+d.dist+' — '+d.fecha+'</div><div style="font-size:12px;color:#374151"><strong>Satisfacción:</strong> '+d.sat+' &nbsp;|&nbsp; <strong>Zona:</strong> '+d.zona+'<br><strong>Problema:</strong> '+d.prob+'</div></div>'; });
-
-  // Build acciones
-  var accionRows = '';
-  acciones.forEach(function(a){ accionRows += '<tr><td>'+a.fecha+'</td><td><strong>'+a.tienda+'</strong></td><td>'+a.accion+'</td></tr>'; });
-
-  // Build zonas tags
-  var zonaItems = Object.entries(zonas).sort(function(a,b){return b[1]-a[1];}).map(function(e){ return '<span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">'+e[0]+': '+e[1]+'</span>'; }).join(' ');
-
-  // Build dist tags
-  var distItems = Object.entries(distribuidores).sort(function(a,b){return b[1]-a[1];}).map(function(e){ return '<span style="background:#F0FDF4;color:#16803C;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">'+e[0]+': '+e[1]+' tiendas</span>'; }).join(' ');
-
-  // Build photos
-  var photosHtml = '';
-  visitsArr.forEach(function(v){
-    var vPhotos=[];
-    CATS.forEach(function(cat){(v.cats[cat.id]&&v.cats[cat.id].photos||[]).forEach(function(src){vPhotos.push({cat:cat.name,src:src});});});
-    if(vPhotos.length){
-      photosHtml += '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;color:#1A3C5C;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E2E5EA">'+v.store.nombre+' — '+(v.isoDate||v.date)+' — '+(v.store.zona||'')+'</div><div style="display:flex;flex-wrap:wrap;gap:10px">';
-      vPhotos.forEach(function(p){ photosHtml += '<div style="text-align:center"><img src="'+p.src+'" style="width:180px;height:135px;object-fit:cover;border-radius:8px;border:2px solid #E2E5EA"><div style="font-size:10px;color:#6B7280;margin-top:3px">'+p.cat+'</div></div>'; });
-      photosHtml += '</div></div>';
-    }
-  });
-
-  // Build conclusion bullets
-  var bullets = '';
-  bullets += '<li>Se visitaron <strong>'+visitsArr.length+' tiendas</strong> en el período '+rangeLabel+'.</li>';
-  bullets += '<li>Cobertura promedio de productos ITP: <strong>'+pct+'%</strong> ('+totalSi+' presentes / '+totalNo+' ausentes).</li>';
-  bullets += '<li>Se relevaron <strong>'+totalComp+' productos de la competencia</strong> en góndola.</li>';
-  if(distProblemas.length) bullets += '<li><strong>'+distProblemas.length+' tienda'+(distProblemas.length>1?'s':'')+' reportaron problemas con el distribuidor</strong> — requiere seguimiento urgente.</li>';
-  if(acciones.length) bullets += '<li><strong>'+acciones.length+' acción'+(acciones.length>1?'es':'')+' comercial'+(acciones.length>1?'es':'')+' pendiente'+(acciones.length>1?'s':'')+' de seguimiento.</strong></li>';
-  if(totalFotos>0) bullets += '<li><strong>'+totalFotos+' foto'+(totalFotos>1?'s':'')+' de góndola</strong> documentadas.</li>';
-
-  var CSS = 'body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111;font-size:13px;line-height:1.5}' +
-    '.page{max-width:960px;margin:0 auto;padding:32px 28px}' +
-    '.rh{background:#1A3C5C;color:#fff;padding:28px 32px;border-radius:12px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-start}' +
-    '.rh h1{font-size:22px;font-weight:700;margin:0 0 6px}.rh p{font-size:12px;opacity:.7;margin:0}' +
-    '.rh-r{text-align:right}.rh-b{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600}' +
-    '.kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}' +
-    '.k{background:#F4F5F7;border-radius:10px;padding:14px;text-align:center;border:1px solid #E2E5EA}' +
-    '.kv{font-size:26px;font-weight:700}.kl{font-size:10px;color:#6B7280;margin-top:3px;text-transform:uppercase}' +
-    '.sec{margin-bottom:28px}.st{font-size:15px;font-weight:700;color:#1A3C5C;border-bottom:3px solid #E8500A;padding-bottom:6px;margin-bottom:14px}' +
-    'table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}' +
-    'th{background:#1A3C5C;color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:600}' +
-    'td{padding:7px 10px;border-bottom:1px solid #E2E5EA;vertical-align:top}' +
-    'tr:nth-child(even)td{background:#F8F9FB}' +
-    '.ab{background:#FFFBEB;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:8px}' +
-    '.ag{background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:8px}' +
-    '.footer{margin-top:36px;padding-top:16px;border-top:2px solid #E2E5EA;font-size:10px;color:#9CA3AF;text-align:center}' +
-    '@media print{.noprint{display:none}.page{padding:20px}}';
-
-  var body = '<div class="page">';
-
-  // Header
-  body += '<div class="rh"><div><h1>Informe de Relevamiento de Mercado</h1>';
-  body += '<p>Intertropico · Canal tradicional · Barcelona &amp; Cataluña</p>';
-  body += '<p style="margin-top:6px;opacity:.9;font-size:14px;font-weight:600">Período: '+rangeLabel+'</p></div>';
-  body += '<div class="rh-r"><div class="rh-b">Generado el '+genDate+'</div>';
-  body += '<div style="margin-top:8px;font-size:12px;opacity:.6">Nicolás Brandam — Desarrollo Comercial</div>';
-  body += '<div style="margin-top:4px;font-size:11px;opacity:.5">CONFIDENCIAL</div></div></div>';
-
-  // KPIs
-  body += '<div class="kpi">';
-  body += '<div class="k"><div class="kv">'+visitsArr.length+'</div><div class="kl">Tiendas visitadas</div></div>';
-  body += '<div class="k"><div class="kv" style="color:#16803C">'+totalSi+'</div><div class="kl">ITP presentes</div></div>';
-  body += '<div class="k"><div class="kv" style="color:#B91C1C">'+totalNo+'</div><div class="kl">ITP ausentes</div></div>';
-  body += '<div class="k"><div class="kv" style="color:#B45309">'+totalComp+'</div><div class="kl">Competencia</div></div>';
-  body += '<div class="k"><div class="kv" style="color:#1D4ED8">'+pct+'%</div><div class="kl">Cobertura ITP</div></div>';
-  body += '</div>';
-
-  // Zonas
-  body += '<div class="sec"><div class="st">Cobertura geográfica y distribución</div>';
-  body += '<div style="margin-bottom:10px"><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Visitas por zona:</strong><br><div style="margin-top:6px">'+zonaItems+'</div></div>';
-  body += '<div><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Distribuidores:</strong><br><div style="margin-top:6px">'+distItems+'</div></div></div>';
-
-  // Stores table
-  body += '<div class="sec"><div class="st">Tiendas visitadas — detalle completo</div>';
-  body += '<table><thead><tr><th>Fecha</th><th>Tienda</th><th>Zona</th><th>Tipo</th><th>Distribuidor</th><th>Satisfacción</th><th>Frecuencia</th><th>ITP ✓</th><th>ITP ✗</th><th>Comp.</th><th>Teléfono</th><th>Próxima acción</th></tr></thead><tbody>'+storeRows+'</tbody></table></div>';
-
-  // Dist problems
-  body += '<div class="sec"><div class="st">Relación con distribuidores</div>';
-  if (distProblemas.length) {
-    body += distRows;
-    body += '<div style="background:#FFF7ED;border-radius:8px;padding:12px;margin-top:8px;font-size:12px"><strong>Nota para dirección:</strong> Los problemas de servicio con el distribuidor afectan directamente la presencia de productos ITP en tienda.</div>';
-  } else {
-    body += '<div class="ag"><strong>Sin quejas registradas en el período.</strong> Todos los clientes reportaron relación satisfactoria con su distribuidor.</div>';
-  }
-  body += '</div>';
-
-  // Category presence
-  body += '<div class="sec"><div class="st">Presencia Intertropico / Morixe por categoría</div>';
-  body += '<table><thead><tr><th>Categoría</th><th>✓ Presente</th><th>✗ Ausente</th><th>Cobertura</th><th>Competencia principal</th></tr></thead><tbody>'+catRows+'</tbody></table></div>';
-
-  // Prices
-  if (priceRows) {
-    body += '<div class="sec"><div class="st">Benchmark de precios ITP en góndola</div>';
-    body += '<table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoría</th><th>Producto / Formato</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>'+priceRows+'</tbody></table></div>';
-  }
-
-  // Competition
-  if (compRows) {
-    body += '<div class="sec"><div class="st">Competencia relevada por categoría y tienda</div>';
-    body += '<table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoría</th><th>Marca</th><th>Producto</th><th>Precio</th><th>Obs.</th><th>Fecha</th></tr></thead><tbody>'+compRows+'</tbody></table></div>';
-  }
-
-  // Actions
-  if (accionRows) {
-    body += '<div class="sec"><div class="st">Próximas acciones comerciales</div>';
-    body += '<table><thead><tr><th>Fecha</th><th>Tienda</th><th>Acción pendiente</th></tr></thead><tbody>'+accionRows+'</tbody></table></div>';
-  }
-
-  // Photos
-  if (photosHtml) {
-    body += '<div class="sec"><div class="st">Registro fotográfico de góndola</div>'+photosHtml+'</div>';
-  }
-
-  // Summary
-  body += '<div class="sec"><div class="st">Resumen ejecutivo del período</div>';
-  body += '<div class="ab"><strong style="font-size:13px">Hallazgos principales:</strong><ul style="margin:8px 0 0 16px;font-size:12px;line-height:1.8">'+bullets+'</ul></div></div>';
-
-  body += '<div class="footer">Intertropico · Desarrollo Comercial Cataluña 2026 · Nicolás Brandam — CONFIDENCIAL<br>Generado el '+genDate+' desde la app de campo</div>';
-  body += '</div>';
-
-  // Print button
-  body += '<div class="noprint" style="text-align:center;padding:24px;background:#F4F5F7">';
-  body += '<button onclick="window.print()" style="padding:14px 32px;background:#1A3C5C;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">Imprimir / Guardar PDF</button>';
-  body += '<button onclick="window.close()" style="padding:14px 24px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button></div>';
-
-  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rangeLabel+'</title><style>'+CSS+'</style></head><body>'+body+'</body></html>';
-
-  var blob = new Blob([htm], {type:'text/html;charset=utf-8'});
-  var burl = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = burl;
-  var filename = desde===hasta ? 'informe_itp_'+desde+'.html' : 'informe_itp_'+desde+'_al_'+hasta+'.html';
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(burl);
-  toast('Informe generado — abrilo y guardá como PDF', 4000);
-}
-// Keep old genInformeDia as alias for today
-function genInformeDia() {
-  openInformeModal();
-  setQuickDate('hoy');
-}
-
-// Update preview when dates change
-document.addEventListener('change', function(e) {
-  if (e.target.id === 'inf-desde' || e.target.id === 'inf-hasta') {
-    updateInformePreview();
-  }
-});
-
 renderHome();
 </script>
-
-<!-- INFORME DATE PICKER MODAL -->
-<div class="modal-overlay" id="informe-modal" onclick="closeInformeModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-title">&#x1F4C4; Generar informe de visitas</div>
-    <div class="modal-sub">Seleccioná el per&iacute;odo que quer&eacute;s incluir en el informe</div>
-    <div class="date-row">
-      <div class="date-field"><label>Desde</label><input type="date" id="inf-desde"></div>
-      <div class="date-field"><label>Hasta</label><input type="date" id="inf-hasta"></div>
-    </div>
-    <div class="quick-btns">
-      <button class="qbtn" onclick="setQuickDate('hoy')">&#x1F4C5; Hoy</button>
-      <button class="qbtn" onclick="setQuickDate('ayer')">&#x23F0; Ayer</button>
-      <button class="qbtn" onclick="setQuickDate('semana')">&#x1F4C6; Esta semana</button>
-      <button class="qbtn" onclick="setQuickDate('todo')">&#x1F4CB; Todo el historial</button>
-    </div>
-    <div id="informe-preview" style="font-size:12px;color:var(--muted);margin-bottom:16px;min-height:18px"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeInformeModal()">Cancelar</button>
-      <button class="btn-generar" onclick="confirmarInforme()">&#x1F4C4; Generar informe PDF</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
