@@ -225,7 +225,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 <!-- NEW VISIT -->
 <div class="sc" id="s-new">
   <div class="tb">
-    <button class="tb-bk" onclick="go('s-home')">&#x2190;</button>
+    <button class="tb-bk" onclick="goHomeFromNew()">&#x2190;</button>
     <div class="tb-t">Nueva tienda</div>
   </div>
   <div class="scroll">
@@ -233,42 +233,42 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4CD; Localizaci&oacute;n</div>
       <button class="loc-btn" id="loc-btn" onclick="getLoc()">&#x1F4CD; Detectar ubicaci&oacute;n autom&aacute;ticamente</button>
       <div class="loc-res" id="loc-res"></div>
-      <div class="f"><label>Nombre *</label><input type="text" id="fn" placeholder="Ej: Mercalatina"></div>
-      <div class="f"><label>Direcci&oacute;n</label><input type="text" id="fd" placeholder="Calle y n&uacute;mero"></div>
+      <div class="f"><label>Nombre *</label><input type="text" id="fn" placeholder="Ej: Mercalatina" oninput="syncField('nombre',this.value)"></div>
+      <div class="f"><label>Direcci&oacute;n</label><input type="text" id="fd" placeholder="Calle y n&uacute;mero" oninput="syncField('dir',this.value)"></div>
       <div class="two">
         <div class="mf"><label>Zona</label>
-          <select id="fz"><option value="">—</option><option>Sants-Montju&iuml;c</option><option>Eixample</option><option>Sant Mart&iacute;</option><option>Horta-Guinard&oacute;</option><option>Sant Andreu</option><option>Nou Barris</option><option>Hospitalet</option><option>Cornell&agrave;</option><option>Santa Coloma</option><option>Badalona</option><option>Otra</option></select>
+          <select id="fz" onchange="syncField('zona',this.value)"><option value="">—</option><option>Sants-Montju&iuml;c</option><option>Eixample</option><option>Sant Mart&iacute;</option><option>Horta-Guinard&oacute;</option><option>Sant Andreu</option><option>Nou Barris</option><option>Hospitalet</option><option>Cornell&agrave;</option><option>Santa Coloma</option><option>Badalona</option><option>Otra</option></select>
         </div>
-        <div class="mf"><label>Tel&eacute;fono</label><input type="tel" id="ft" placeholder="+34 6xx xxx xxx"></div>
+        <div class="mf"><label>Tel&eacute;fono</label><input type="tel" id="ft" placeholder="+34 6xx xxx xxx" oninput="syncField('tel',this.value)"></div>
       </div>
       <div class="two">
         <div class="mf"><label>Tipo</label>
-          <select id="ftp"><option value="">—</option><option>Supermercado latino</option><option>Colmado / bodega</option><option>Tienda especializada</option><option>Carnicer&iacute;a latina</option><option>HORECA</option><option>Otra</option></select>
+          <select id="ftp" onchange="syncField('tipo',this.value)"><option value="">—</option><option>Supermercado latino</option><option>Colmado / bodega</option><option>Tienda especializada</option><option>Carnicer&iacute;a latina</option><option>HORECA</option><option>Otra</option></select>
         </div>
         <div class="mf"><label>Tama&ntilde;o</label>
-          <select id="fsz"><option value="">—</option><option>&lt;30 m&sup2;</option><option>30&#x2013;70 m&sup2;</option><option>70&#x2013;150 m&sup2;</option><option>&gt;150 m&sup2;</option></select>
+          <select id="fsz" onchange="syncField('size',this.value)"><option value="">—</option><option>&lt;30 m&sup2;</option><option>30&#x2013;70 m&sup2;</option><option>70&#x2013;150 m&sup2;</option><option>&gt;150 m&sup2;</option></select>
         </div>
       </div>
     </div>
     <div class="card" style="padding:14px">
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4E6; Distribuidor</div>
-      <div class="f"><label>&iquest;Qui&eacute;n les surte?</label><input type="text" id="fdist" placeholder="Papagayo, Distribar, directo..."></div>
+      <div class="f"><label>&iquest;Qui&eacute;n les surte?</label><input type="text" id="fdist" placeholder="Papagayo, Distribar, directo..." oninput="syncField('dist',this.value)"></div>
       <div class="two">
         <div class="mf"><label>Satisfacci&oacute;n</label>
-          <select id="fsat"><option value="">—</option><option>Muy contento</option><option>Contento</option><option>Regular</option><option>Insatisfecho</option></select>
+          <select id="fsat" onchange="syncField('sat',this.value)"><option value="">—</option><option>Muy contento</option><option>Contento</option><option>Regular</option><option>Insatisfecho</option></select>
         </div>
         <div class="mf"><label>Frecuencia</label>
-          <select id="ffreq"><option value="">—</option><option>Semanal</option><option>Quincenal</option><option>Mensual</option><option>Sin regularidad</option></select>
+          <select id="ffreq" onchange="syncField('freq',this.value)"><option value="">—</option><option>Semanal</option><option>Quincenal</option><option>Mensual</option><option>Sin regularidad</option></select>
         </div>
       </div>
       <div class="f"><label>&#x26A0;&#xFE0F; Problemas con el distribuidor</label>
-        <textarea id="fprob" rows="3" placeholder="No cambia vencidos, llega rota, no visita seguido..."></textarea>
+        <textarea id="fprob" rows="3" placeholder="No cambia vencidos, llega rota, no visita seguido..." oninput="syncField('prob',this.value)"></textarea>
       </div>
     </div>
     <div class="card" style="padding:14px">
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4DD; Observaciones</div>
-      <div class="f"><label>Notas generales</label><textarea id="fnotas" rows="2" placeholder="Estado del local, actitud del due&ntilde;o..."></textarea></div>
-      <div class="f"><label>&#x2705; Pr&oacute;xima acci&oacute;n</label><input type="text" id="faccion" placeholder="Ej: Volver con muestra cachapa..."></div>
+      <div class="f"><label>Notas generales</label><textarea id="fnotas" rows="2" placeholder="Estado del local, actitud del due&ntilde;o..." oninput="syncField('notas',this.value)"></textarea></div>
+      <div class="f"><label>&#x2705; Pr&oacute;xima acci&oacute;n</label><input type="text" id="faccion" placeholder="Ej: Volver con muestra cachapa..." oninput="syncField('accion',this.value)"></div>
     </div>
     <button class="btn btn-brand" onclick="startVisit()">Ir al relevamiento &#x2192;</button>
   </div>
@@ -463,16 +463,22 @@ function getLoc(){
 }
 
 // ── NEW VISIT ──────────────────────────────────────────────────────────────
+function syncField(field, value){
+  // Live sync form field to curV.store as user types
+  if(curV && curV.store) curV.store[field] = value;
+}
+
+function goHomeFromNew(){
+  // Going back from new visit form - ask if they want to discard
+  if(curV && curV.store.nombre){
+    if(!confirm('Perderás los datos de esta visita. ¿Continuar?')) return;
+  }
+  curV = null;
+  go('s-home');
+}
+
 function goNew(){
-  ['fn','fd','ft','fdist','fprob','fnotas','faccion'].forEach(function(id){
-    var e = document.getElementById(id); if(e) e.value = '';
-  });
-  ['fz','ftp','fsz','fsat','ffreq'].forEach(function(id){
-    var e = document.getElementById(id); if(e) e.value = '';
-  });
-  document.getElementById('loc-res').style.display = 'none';
-  document.getElementById('loc-btn').textContent = 'Detectar ubicación automáticamente';
-  // Init a blank curV so geolocation can store lat/lng
+  // Always create fresh curV
   curV = {
     id: Date.now().toString(),
     synced: false,
@@ -481,13 +487,22 @@ function goNew(){
     store: {nombre:'',dir:'',zona:'',tel:'',tipo:'',size:'',dist:'',sat:'',freq:'',prob:'',notas:'',accion:'',lat:null,lng:null,geoAddr:''},
     cats: newCatState()
   };
+  // Clear form
+  ['fn','fd','ft','fdist','fprob','fnotas','faccion'].forEach(function(id){
+    var e = document.getElementById(id); if(e) e.value = '';
+  });
+  ['fz','ftp','fsz','fsat','ffreq'].forEach(function(id){
+    var e = document.getElementById(id); if(e) e.value = '';
+  });
+  document.getElementById('loc-res').style.display = 'none';
+  document.getElementById('loc-btn').textContent = 'Detectar ubicacion automaticamente';
   go('s-new');
 }
 
 function startVisit(){
+  // Read all form fields into curV.store (covers any field not caught by oninput)
   var nombre = document.getElementById('fn').value.trim();
-  if(!nombre){ alert('Ingresá el nombre de la tienda'); return; }
-  // Update curV store with form values (cats stay intact if coming back)
+  if(!nombre){ alert('Ingresa el nombre de la tienda'); return; }
   curV.store.nombre  = nombre;
   curV.store.dir     = document.getElementById('fd').value;
   curV.store.zona    = document.getElementById('fz').value;
@@ -506,26 +521,29 @@ function startVisit(){
 }
 
 function goBackToNew(){
-  // Go back to the form without losing curV data
-  if(!curV) { go('s-home'); return; }
-  // Repopulate form with current curV values
-  document.getElementById('fn').value    = curV.store.nombre  || '';
-  document.getElementById('fd').value    = curV.store.dir     || '';
-  document.getElementById('fz').value    = curV.store.zona    || '';
-  document.getElementById('ft').value    = curV.store.tel     || '';
-  document.getElementById('ftp').value   = curV.store.tipo    || '';
-  document.getElementById('fsz').value   = curV.store.size    || '';
-  document.getElementById('fdist').value = curV.store.dist    || '';
-  document.getElementById('fsat').value  = curV.store.sat     || '';
-  document.getElementById('ffreq').value = curV.store.freq    || '';
-  document.getElementById('fprob').value = curV.store.prob    || '';
-  document.getElementById('fnotas').value= curV.store.notas   || '';
-  document.getElementById('faccion').value=curV.store.accion  || '';
-  // Show geo result if we have coords
-  if(curV.store.geoAddr){
+  if(!curV){ go('s-home'); return; }
+  // Repopulate ALL form fields from curV.store
+  var s = curV.store;
+  var setVal = function(id, val){
+    var e = document.getElementById(id);
+    if(e) e.value = val || '';
+  };
+  setVal('fn',     s.nombre);
+  setVal('fd',     s.dir);
+  setVal('fz',     s.zona);
+  setVal('ft',     s.tel);
+  setVal('ftp',    s.tipo);
+  setVal('fsz',    s.size);
+  setVal('fdist',  s.dist);
+  setVal('fsat',   s.sat);
+  setVal('ffreq',  s.freq);
+  setVal('fprob',  s.prob);
+  setVal('fnotas', s.notas);
+  setVal('faccion',s.accion);
+  if(s.geoAddr){
     var res = document.getElementById('loc-res');
     res.style.display = 'block';
-    res.textContent = 'Ubicacion: ' + curV.store.geoAddr;
+    res.textContent = 'Ubicacion: ' + s.geoAddr;
   }
   go('s-new');
 }
