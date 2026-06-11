@@ -277,7 +277,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 <!-- CATS -->
 <div class="sc" id="s-cats">
   <div class="tb">
-    <button class="tb-bk" onclick="go('s-home')">&#x2190;</button>
+    <button class="tb-bk" onclick="goBackToNew()">&#x2190;</button>
     <div style="flex:1"><div class="tb-t" id="cats-n">—</div><div class="tb-s">Toc&aacute; una categor&iacute;a</div></div>
     <button class="tb-btn" onclick="goSum()">Listo &#x2713;</button>
   </div>
@@ -487,7 +487,7 @@ function goNew(){
 function startVisit(){
   var nombre = document.getElementById('fn').value.trim();
   if(!nombre){ alert('Ingresá el nombre de la tienda'); return; }
-  // Update curV store with form values
+  // Update curV store with form values (cats stay intact if coming back)
   curV.store.nombre  = nombre;
   curV.store.dir     = document.getElementById('fd').value;
   curV.store.zona    = document.getElementById('fz').value;
@@ -503,6 +503,31 @@ function startVisit(){
   document.getElementById('cats-n').textContent = nombre;
   renderCatList();
   go('s-cats');
+}
+
+function goBackToNew(){
+  // Go back to the form without losing curV data
+  if(!curV) { go('s-home'); return; }
+  // Repopulate form with current curV values
+  document.getElementById('fn').value    = curV.store.nombre  || '';
+  document.getElementById('fd').value    = curV.store.dir     || '';
+  document.getElementById('fz').value    = curV.store.zona    || '';
+  document.getElementById('ft').value    = curV.store.tel     || '';
+  document.getElementById('ftp').value   = curV.store.tipo    || '';
+  document.getElementById('fsz').value   = curV.store.size    || '';
+  document.getElementById('fdist').value = curV.store.dist    || '';
+  document.getElementById('fsat').value  = curV.store.sat     || '';
+  document.getElementById('ffreq').value = curV.store.freq    || '';
+  document.getElementById('fprob').value = curV.store.prob    || '';
+  document.getElementById('fnotas').value= curV.store.notas   || '';
+  document.getElementById('faccion').value=curV.store.accion  || '';
+  // Show geo result if we have coords
+  if(curV.store.geoAddr){
+    var res = document.getElementById('loc-res');
+    res.style.display = 'block';
+    res.textContent = 'Ubicacion: ' + curV.store.geoAddr;
+  }
+  go('s-new');
 }
 
 // ── CAT LIST ───────────────────────────────────────────────────────────────
