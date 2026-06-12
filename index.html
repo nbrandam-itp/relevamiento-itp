@@ -773,7 +773,13 @@ async function doSyncDet(){
 
 async function doSyncAll(){
   var pending = visits.filter(function(v){ return !v.synced; });
-  if(!pending.length){ toast('Todo sincronizado'); return; }
+  if(!pending.length){ 
+    // All marked as synced - ask if want to force re-sync all
+    if(visits.length > 0 && confirm('Todas las visitas figuran como sincronizadas.\n\n¿Querés forzar la re-sincronización de TODAS (' + visits.length + ') visitas al Sheet?')){
+      doSyncForce();
+    }
+    return; 
+  }
   toast('Sincronizando ' + pending.length + ' visitas...', 5000);
   for(var i=0; i<pending.length; i++){
     await pushToSheets(pending[i]);
@@ -781,6 +787,22 @@ async function doSyncAll(){
   }
   saveV(); renderHome(); renderRd();
   toast(pending.length + ' visitas sincronizadas', 3000);
+}
+
+async function doSyncForce(){
+  if(!visits.length){ toast('Sin visitas guardadas'); return; }
+  toast('Re-sincronizando ' + visits.length + ' visitas...', 8000);
+  // Mark all as unsynced first
+  visits.forEach(function(v){ v.synced = false; });
+  saveV();
+  var ok = 0;
+  for(var i=0; i<visits.length; i++){
+    await pushToSheets(visits[i]);
+    visits[i].synced = true;
+    ok++;
+  }
+  saveV(); renderHome(); renderRd();
+  toast('Re-sincronizadas ' + ok + ' visitas al Sheet', 4000);
 }
 
 // ── DELETE ─────────────────────────────────────────────────────────────────
