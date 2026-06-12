@@ -516,6 +516,8 @@ function startVisit(){
   curV.store.notas   = document.getElementById('fnotas').value;
   curV.store.accion  = document.getElementById('faccion').value;
   document.getElementById('cats-n').textContent = nombre;
+  // Backup curV to sessionStorage in case of memory loss
+  try{ sessionStorage.setItem('itp_curV', JSON.stringify(curV)); }catch(e){}
   renderCatList();
   go('s-cats');
 }
@@ -685,7 +687,13 @@ function delPhoto(){
 }
 
 // ── SUMMARY ────────────────────────────────────────────────────────────────
-function goSum(){ renderSum(curV, 'sum-content'); go('s-sum'); }
+function goSum(){
+  if(!curV){ toast('Sin visita activa'); return; }
+  // Backup before showing summary
+  try{ sessionStorage.setItem('itp_curV', JSON.stringify(curV)); }catch(e){}
+  renderSum(curV, 'sum-content');
+  go('s-sum');
+}
 
 function renderSum(v, cid){
   var si=[], no=[], allC=[], allP=[];
@@ -739,9 +747,13 @@ function renderSum(v, cid){
 
 // ── SAVE LOCAL ─────────────────────────────────────────────────────────────
 function doSaveLocal(){
+  // Recover curV from sessionStorage if lost
   if(!curV){
-    toast('Sin visita activa — completá los datos primero');
-    return;
+    try{
+      var bk = sessionStorage.getItem('itp_curV');
+      if(bk){ curV = JSON.parse(bk); toast('Visita recuperada'); }
+      else{ toast('Sin visita activa — iniciá una nueva'); return; }
+    }catch(e){ toast('Sin visita activa'); return; }
   }
   if(!curV.store.nombre){
     toast('Falta el nombre de la tienda');
@@ -755,6 +767,7 @@ function doSaveLocal(){
     var check = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
     if(check.length > 0){
       toast('Guardado: ' + curV.store.nombre + ' (' + check.length + ' visitas en total)');
+      try{ sessionStorage.removeItem('itp_curV'); }catch(e){}
       curV = null;
       renderHome();
       go('s-home');
@@ -798,10 +811,14 @@ async function pushToSheets(v){
   }
 }
 
-async async function doSaveCloud(){
+async async async function doSaveCloud(){
+  // Recover curV from sessionStorage if lost
   if(!curV){
-    toast('Sin visita activa — completá los datos primero');
-    return;
+    try{
+      var bk = sessionStorage.getItem('itp_curV');
+      if(bk){ curV = JSON.parse(bk); toast('Visita recuperada'); }
+      else{ toast('Sin visita activa — iniciá una nueva'); return; }
+    }catch(e){ toast('Sin visita activa'); return; }
   }
   if(!curV.store.nombre){
     toast('Falta el nombre de la tienda');
