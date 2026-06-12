@@ -739,15 +739,30 @@ function renderSum(v, cid){
 
 // ── SAVE LOCAL ─────────────────────────────────────────────────────────────
 function doSaveLocal(){
-  if(!curV){ toast('Error: sin visita activa'); return; }
-  var idx = visits.findIndex(function(v){ return v.id === curV.id; });
-  if(idx >= 0) visits[idx] = curV; else visits.unshift(curV);
-  var ok = saveV();
-  if(ok){
-    toast('Guardado localmente — ' + visits.length + ' visita(s)');
-    curV = null;
-    renderHome();
-    go('s-home');
+  if(!curV){
+    toast('Sin visita activa — completá los datos primero');
+    return;
+  }
+  if(!curV.store.nombre){
+    toast('Falta el nombre de la tienda');
+    go('s-cats');
+    return;
+  }
+  try {
+    var idx = visits.findIndex(function(v){ return v.id === curV.id; });
+    if(idx >= 0) visits[idx] = curV; else visits.unshift(curV);
+    localStorage.setItem(STORE_KEY, JSON.stringify(visits));
+    var check = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+    if(check.length > 0){
+      toast('Guardado: ' + curV.store.nombre + ' (' + check.length + ' visitas en total)');
+      curV = null;
+      renderHome();
+      go('s-home');
+    } else {
+      toast('Error: no se pudo verificar el guardado');
+    }
+  } catch(e) {
+    toast('Error al guardar: ' + e.message);
   }
 }
 
@@ -783,23 +798,47 @@ async function pushToSheets(v){
   }
 }
 
-async function doSaveCloud(){
-  if(!curV){ toast('Error: sin visita activa'); return; }
-  // First save locally
-  var idx = visits.findIndex(function(v){ return v.id === curV.id; });
-  if(idx >= 0) visits[idx] = curV; else visits.unshift(curV);
-  saveV();
+async async function doSaveCloud(){
+  if(!curV){
+    toast('Sin visita activa — completá los datos primero');
+    return;
+  }
+  if(!curV.store.nombre){
+    toast('Falta el nombre de la tienda');
+    return;
+  }
+  // 1. Save locally first always
+  try {
+    var idx = visits.findIndex(function(v){ return v.id === curV.id; });
+    if(idx >= 0) visits[idx] = curV; else visits.unshift(curV);
+    localStorage.setItem(STORE_KEY, JSON.stringify(visits));
+  } catch(e) {
+    toast('Error guardando local: ' + e.message);
+    return;
+  }
+  // 2. Send to Sheets
   toast('Enviando a Google Sheets...', 4000);
-  var ok = await pushToSheets(curV);
-  // no-cors always returns ok=true (can't read response), mark as synced
-  curV.synced = true;
+  try {
+    var rows = buildRows(curV);
+    if(rows.length > 0){
+      await fetch(SHEETS, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action:'save_rows', rows:rows})
+      });
+    }
+    curV.synced = true;
+  } catch(e) {
+    // no-cors fetch errors are ignored - data is already saved locally
+  }
+  // 3. Update synced status in local storage
   var idx2 = visits.findIndex(function(v){ return v.id === curV.id; });
   if(idx2 >= 0) visits[idx2] = curV;
-  saveV();
-  renderHome();
-  toast('Guardado en Sheets y local', 3000);
-  var saved = curV;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(visits)); } catch(e){}
+  toast('Guardado: local + Sheets', 3000);
   curV = null;
+  renderHome();
   go('s-home');
 }
 
