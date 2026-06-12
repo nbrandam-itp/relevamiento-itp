@@ -346,7 +346,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
     <button class="tb-btn" style="margin-right:6px;background:rgba(255,255,255,.15)" onclick="openModal()">&#x1F4C4; Informe</button>
     <button class="tb-btn" onclick="doSyncAll()">&#x2601;&#xFE0F; Sync</button>
   </div>
-  <div class="scroll"><div id="rd-content"></div></div>
+  <div class="scroll">
+    <div id="rd-content"></div>
+    <button class="btn btn-green" onclick="doSyncForce()" style="margin-top:8px">
+      &#x2601;&#xFE0F; Re-sincronizar TODO con Sheets
+    </button>
+  </div>
 </div>
 
 <script>
@@ -772,13 +777,11 @@ async function doSyncDet(){
 }
 
 async function doSyncAll(){
+  loadV();
   var pending = visits.filter(function(v){ return !v.synced; });
-  if(!pending.length){ 
-    // All marked as synced - ask if want to force re-sync all
-    if(visits.length > 0 && confirm('Todas las visitas figuran como sincronizadas.\n\n¿Querés forzar la re-sincronización de TODAS (' + visits.length + ') visitas al Sheet?')){
-      doSyncForce();
-    }
-    return; 
+  if(!pending.length){
+    toast('Todo ya sincronizado — usá Re-sincronizar TODO para forzar');
+    return;
   }
   toast('Sincronizando ' + pending.length + ' visitas...', 5000);
   for(var i=0; i<pending.length; i++){
@@ -790,11 +793,9 @@ async function doSyncAll(){
 }
 
 async function doSyncForce(){
-  if(!visits.length){ toast('Sin visitas guardadas'); return; }
-  toast('Re-sincronizando ' + visits.length + ' visitas...', 8000);
-  // Mark all as unsynced first
-  visits.forEach(function(v){ v.synced = false; });
-  saveV();
+  loadV();
+  if(!visits.length){ toast('Sin visitas guardadas en este dispositivo'); return; }
+  toast('Subiendo ' + visits.length + ' visitas a Sheets...', 8000);
   var ok = 0;
   for(var i=0; i<visits.length; i++){
     await pushToSheets(visits[i]);
@@ -802,7 +803,7 @@ async function doSyncForce(){
     ok++;
   }
   saveV(); renderHome(); renderRd();
-  toast('Re-sincronizadas ' + ok + ' visitas al Sheet', 4000);
+  toast(ok + ' visitas subidas al Sheet', 4000);
 }
 
 // ── DELETE ─────────────────────────────────────────────────────────────────
