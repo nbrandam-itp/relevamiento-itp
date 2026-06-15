@@ -171,20 +171,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 .dsc-v{font-size:20px;font-weight:700;color:var(--accent)}
 .dsc-l{font-size:10px;color:var(--muted);margin-top:2px}
 
-/* DIST TOGGLES */
-.dist-tog-row{display:flex;gap:8px;margin-bottom:10px}
-.dist-tog{padding:10px 16px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;flex:1;text-align:center}
-.dist-tog:active{transform:scale(.97)}
-.dist-tog.d-si{background:#DCFCE7;color:var(--green);border-color:#86EFAC}
-.dist-tog.d-no{background:#FEE2E2;color:var(--red);border-color:#FCA5A5}
-.otros-dist{margin-top:8px}
-.otros-dist-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.otros-dist-item input{flex:1;font-size:14px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font-family:'DM Sans',sans-serif}
-.otros-dist-item input:focus{outline:none;border-color:var(--brand)}
-.otros-dist-del{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0}
-.add-dist-btn{width:100%;padding:9px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px}
-.add-dist-btn:active{background:var(--bg)}
-
+/* CLOUD STATUS */
+#cloud-status{ animation: pulse 1.5s infinite; }
+@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.6} }
 </style>
 </head>
 <body>
@@ -230,6 +219,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
   <div class="home-btns">
     <button class="hbtn hbtn-p" onclick="goNew()">+ Nueva visita</button>
     <button class="hbtn hbtn-s" onclick="goRd()">&#x1F4CA; Historial</button>
+  </div>
+  <div id="cloud-status" style="display:none;margin:6px 14px 0;padding:9px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:#EFF6FF;color:#1D4ED8;align-items:center;gap:8px">
+    &#x23F3; Sincronizando con la nube...
+  </div>
+  <div style="padding:6px 14px 0;flex-shrink:0">
+    <button onclick="loadFromCloud()" style="width:100%;padding:10px;border:1.5px solid #BFDBFE;border-radius:var(--radius);background:#EFF6FF;color:#1D4ED8;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
+      &#x2193; Cargar historial desde la nube
+    </button>
   </div>
   <div class="scroll" style="padding-top:12px">
     <div class="sec-t">Visitas guardadas</div>
@@ -361,16 +358,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
     <button class="tb-btn" style="margin-right:6px;background:rgba(255,255,255,.15)" onclick="openModal()">&#x1F4C4; Informe</button>
     <button class="tb-btn" onclick="doSyncAll()">&#x2601;&#xFE0F; Sync</button>
   </div>
-  <div class="scroll">
-    <div id="rd-content"></div>
-    <button class="btn btn-green" onclick="doSyncForce()" style="margin-top:8px">
-      &#x2601;&#xFE0F; Re-sincronizar TODO con Sheets
-    </button>
-  </div>
+  <div class="scroll"><div id="rd-content"></div></div>
 </div>
 
 <script>
 var SHEETS = 'https://script.google.com/macros/s/AKfycbxfbb0a3g4TPupLOYWFXHvDDCVlZLIDPFxZAQ16ErdLD5dG9uonqxFLvUMRoquIm7GIQw/exec';
+var SB_URL = 'https://owzlnbrmilqoxwuxrttf.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93emxuYnJtaWxxb3h3dXhydHRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MDcwNDgsImV4cCI6MjA5NzA4MzA0OH0.P6J8AuT-ayE2BFhW1fPZ4PO6oN2usK_9oRX7hR86ZWU';
 var STORE_KEY = 'itp_v6';
 
 var CATS = [
@@ -400,17 +394,92 @@ var lbIdx = null;
 var lbCat = null;
 
 function loadV(){
+  // Load from localStorage (fast, offline-capable)
   try{ visits = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
   catch(e){ visits = []; }
 }
 
+async function loadFromCloud(){
+  var el = document.getElementById('cloud-status');
+  if(el){ el.textContent = 'Sincronizando con la nube...'; el.style.display='flex'; }
+  var cloudVisits = await loadFromSupabase();
+  if(cloudVisits && cloudVisits.length > 0){
+    // Merge: cloud is master, keep local-only visits not in cloud
+    var cloudIds = new Set(cloudVisits.map(function(v){ return v.id; }));
+    var localOnly = visits.filter(function(v){ return !cloudIds.has(v.id); });
+    visits = cloudVisits.concat(localOnly);
+    // Save merged to localStorage
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(visits)); }catch(e){}
+    if(el){ el.style.display='none'; }
+    renderHome();
+    toast('Historial actualizado: ' + visits.length + ' visitas', 2500);
+  } else {
+    if(el){ el.style.display='none'; }
+  }
+}
+
 function saveV(){
+  // Always save to localStorage as backup
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(visits)); }
+  catch(e){ console.warn('localStorage error:', e); }
+  return true;
+}
+
+// Save single visit to Supabase (upsert)
+async function saveToSupabase(v){
   try{
-    localStorage.setItem(STORE_KEY, JSON.stringify(visits));
-    return true;
+    var body = JSON.stringify({
+      id: v.id,
+      fecha: v.date,
+      iso_date: v.isoDate,
+      store: v.store,
+      cats: v.cats,
+      synced: true,
+      updated_at: new Date().toISOString()
+    });
+    var resp = await fetch(SB_URL + '/rest/v1/visitas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: body
+    });
+    return resp.ok || resp.status === 201 || resp.status === 200;
   } catch(e){
-    toast('Error al guardar: ' + e.message);
+    console.warn('Supabase save error:', e);
     return false;
+  }
+}
+
+// Load all visits from Supabase
+async function loadFromSupabase(){
+  try{
+    var resp = await fetch(SB_URL + '/rest/v1/visitas?select=*&order=iso_date.desc', {
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY
+      }
+    });
+    if(!resp.ok) return null;
+    var data = await resp.json();
+    if(!Array.isArray(data) || data.length === 0) return null;
+    // Reconstruct visit objects from Supabase rows
+    return data.map(function(row){
+      return {
+        id: row.id,
+        date: row.fecha,
+        isoDate: row.iso_date,
+        store: row.store || {},
+        cats: row.cats || newCatState(),
+        synced: true
+      };
+    });
+  } catch(e){
+    console.warn('Supabase load error:', e);
+    return null;
   }
 }
 
@@ -498,7 +567,7 @@ function goNew(){
     synced: false,
     date: new Date().toLocaleDateString('es-ES'),
     isoDate: new Date().toISOString().slice(0,10),
-    store: {nombre:'',dir:'',zona:'',tel:'',tipo:'',size:'',dist:'',papagayo:'',otrosDist:[],sat:'',freq:'',prob:'',notas:'',accion:'',lat:null,lng:null,geoAddr:''},
+    store: {nombre:'',dir:'',zona:'',tel:'',tipo:'',size:'',dist:'',sat:'',freq:'',prob:'',notas:'',accion:'',lat:null,lng:null,geoAddr:''},
     cats: newCatState()
   };
   go('s-new');
@@ -520,7 +589,6 @@ function startVisit(){
   curV.store.prob    = document.getElementById('fprob').value;
   curV.store.notas   = document.getElementById('fnotas').value;
   curV.store.accion  = document.getElementById('faccion').value;
-  // papagayo and otrosDist already synced via setPapagayo/updateOtroDist
   document.getElementById('cats-n').textContent = nombre;
   renderCatList();
   go('s-cats');
@@ -684,8 +752,6 @@ function renderSum(v, cid){
   h += '<div class="sum-hero"><div class="sum-n">'+v.store.nombre+'</div>';
   h += '<div class="sum-m">'+[v.store.dir||v.store.geoAddr,v.store.zona].filter(Boolean).join(' · ')+'</div>';
   if(v.store.dist) h += '<div class="sum-m">Dist: '+v.store.dist+(v.store.sat?' · '+v.store.sat:'')+'</div>';
-  if(v.store.papagayo) h += '<div class="sum-m">Papagayo: <strong style="color:'+(v.store.papagayo==='si'?'#16803C':'#B91C1C')+'">'+( v.store.papagayo==='si'?'✓ Sí atendido':'✗ No atendido')+'</strong></div>';
-  if(v.store.otrosDist && v.store.otrosDist.filter(Boolean).length) h += '<div class="sum-m">Otros dist: '+v.store.otrosDist.filter(Boolean).join(', ')+'</div>';
   if(v.store.lat) h += '<div style="margin-top:4px">'+mapL+'</div>';
   h += '<div style="margin-top:8px">'+sb+'</div></div>';
   h += '<div class="st4">';
@@ -718,17 +784,28 @@ function renderSum(v, cid){
 }
 
 // ── SAVE LOCAL ─────────────────────────────────────────────────────────────
-function doSaveLocal(){
+async function doSaveLocal(){
   if(!curV){ toast('Error: sin visita activa'); return; }
   var idx = visits.findIndex(function(v){ return v.id === curV.id; });
   if(idx >= 0) visits[idx] = curV; else visits.unshift(curV);
-  var ok = saveV();
-  if(ok){
-    toast('Guardado localmente — ' + visits.length + ' visita(s)');
-    curV = null;
-    renderHome();
-    go('s-home');
+  saveV(); // Save to localStorage immediately
+  toast('Guardando...', 2000);
+  // Try Supabase in background
+  var sbOk = await saveToSupabase(curV);
+  if(sbOk){
+    curV.synced = true;
+    var idx2 = visits.findIndex(function(v){ return v.id === (curV&&curV.id); });
+    if(idx2 >= 0) visits[idx2].synced = true;
+    saveV();
+    toast('Guardado en la nube', 2500);
+  } else {
+    curV.synced = false;
+    saveV();
+    toast('Guardado local (sin conexion a nube)', 2500);
   }
+  curV = null;
+  renderHome();
+  go('s-home');
 }
 
 // ── SAVE CLOUD ─────────────────────────────────────────────────────────────
@@ -736,7 +813,6 @@ function buildRows(v){
   var rows = [];
   var base = [v.isoDate, v.store.nombre, v.store.dir||v.store.geoAddr||'', v.store.zona||'',
               v.store.tel||'', v.store.tipo||'', v.store.size||'', v.store.dist||'',
-              v.store.papagayo||'', (v.store.otrosDist||[]).filter(Boolean).join(', '),
               v.store.sat||'', v.store.freq||'', v.store.prob||'', v.store.notas||'',
               v.store.accion||'', v.store.lat||'', v.store.lng||''];
   CATS.forEach(function(cat){
@@ -796,12 +872,8 @@ async function doSyncDet(){
 }
 
 async function doSyncAll(){
-  loadV();
   var pending = visits.filter(function(v){ return !v.synced; });
-  if(!pending.length){
-    toast('Todo ya sincronizado — usá Re-sincronizar TODO para forzar');
-    return;
-  }
+  if(!pending.length){ toast('Todo sincronizado'); return; }
   toast('Sincronizando ' + pending.length + ' visitas...', 5000);
   for(var i=0; i<pending.length; i++){
     await pushToSheets(pending[i]);
@@ -809,20 +881,6 @@ async function doSyncAll(){
   }
   saveV(); renderHome(); renderRd();
   toast(pending.length + ' visitas sincronizadas', 3000);
-}
-
-async function doSyncForce(){
-  loadV();
-  if(!visits.length){ toast('Sin visitas guardadas en este dispositivo'); return; }
-  toast('Subiendo ' + visits.length + ' visitas a Sheets...', 8000);
-  var ok = 0;
-  for(var i=0; i<visits.length; i++){
-    await pushToSheets(visits[i]);
-    visits[i].synced = true;
-    ok++;
-  }
-  saveV(); renderHome(); renderRd();
-  toast(ok + ' visitas subidas al Sheet', 4000);
 }
 
 // ── DELETE ─────────────────────────────────────────────────────────────────
@@ -942,7 +1000,7 @@ function renderRd(){
     h += '<div class="dh"><div class="dt">'+date+(date===new Date().toISOString().slice(0,10)?' (hoy)':'')+'</div><div class="dm">'+dv.length+' tiendas · '+sy+'/'+dv.length+' en nube</div></div>';
     h += '<div class="dstats"><div class="dsc"><div class="dsc-v" style="color:var(--green)">'+tSi+'</div><div class="dsc-l">ITP presentes</div></div><div class="dsc"><div class="dsc-v" style="color:var(--red)">'+tNo+'</div><div class="dsc-l">ITP ausentes</div></div><div class="dsc"><div class="dsc-v" style="color:var(--amber)">'+tC+'</div><div class="dsc-l">Competencia</div></div></div>';
     h += '<div class="ibox" style="margin-bottom:8px"><div class="il">Tiendas</div>';
-    dv.forEach(function(v){ var si=0,no=0; CATS.forEach(function(cat){ var cs=v.cats[cat.id];if(!cs)return;Object.values(cs.brands).forEach(function(val){if(val==='si')si++;else if(val==='no')no++;}); }); var papTag=v.store.papagayo==='si'?'<span style="color:var(--green);font-weight:700"> PAP✓</span>':v.store.papagayo==='no'?'<span style="color:var(--red)"> PAP✗</span>':''; h+='<div style="font-size:12px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--border)">'+(v.synced?'Nube':'Local')+' <strong>'+v.store.nombre+'</strong> · '+(v.store.zona||'—')+' · '+(v.store.dist||'—')+papTag+' ITP:'+si+'/'+no+(v.store.prob?' ⚠️':'')+'</div>'; });
+    dv.forEach(function(v){ var si=0,no=0; CATS.forEach(function(cat){ var cs=v.cats[cat.id];if(!cs)return;Object.values(cs.brands).forEach(function(val){if(val==='si')si++;else if(val==='no')no++;}); }); h+='<div style="font-size:12px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--border)">'+(v.synced?'Nube':'Local')+' <strong>'+v.store.nombre+'</strong> · '+(v.store.zona||'—')+' · '+(v.store.dist||'—')+' ITP:'+si+'/'+no+(v.store.prob?' ⚠️':'')+'</div>'; });
     h += '</div>';
     if(probs.length){ h+='<div class="wbox" style="margin-bottom:8px"><div class="wt">Problemas distribuidor</div>'; probs.forEach(function(p){ h+='<div style="font-size:12px;margin-top:4px"><strong>'+p.t+':</strong> '+p.p+'</div>'; }); h+='</div>'; }
     if(acs.length){ h+='<div class="abox" style="margin-bottom:8px"><div class="at">Próximas acciones</div>'; acs.forEach(function(a){ h+='<div style="font-size:12px;margin-top:4px"><strong>'+a.t+':</strong> '+a.a+'</div>'; }); h+='</div>'; }
@@ -1103,20 +1161,9 @@ function genInforme(arr, desde, hasta){
   bd+='<div class="np" style="text-align:center;padding:20px;background:#F4F5F7"><button onclick="window.print()" style="padding:13px 28px;background:#1A3C5C;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">Imprimir / Guardar PDF</button><button onclick="window.close()" style="padding:13px 22px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button></div>';
 
   var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'
-/* DIST TOGGLES */
-.dist-tog-row{display:flex;gap:8px;margin-bottom:10px}
-.dist-tog{padding:10px 16px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;flex:1;text-align:center}
-.dist-tog:active{transform:scale(.97)}
-.dist-tog.d-si{background:#DCFCE7;color:var(--green);border-color:#86EFAC}
-.dist-tog.d-no{background:#FEE2E2;color:var(--red);border-color:#FCA5A5}
-.otros-dist{margin-top:8px}
-.otros-dist-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.otros-dist-item input{flex:1;font-size:14px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font-family:'DM Sans',sans-serif}
-.otros-dist-item input:focus{outline:none;border-color:var(--brand)}
-.otros-dist-del{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0}
-.add-dist-btn{width:100%;padding:9px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px}
-.add-dist-btn:active{background:var(--bg)}
-
+/* CLOUD STATUS */
+#cloud-status{ animation: pulse 1.5s infinite; }
+@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.6} }
 </style></head><body>'+bd+'</body></html>';
   var blob = new Blob([htm], {type:'text/html;charset=utf-8'});
   var url = URL.createObjectURL(blob);
@@ -1127,74 +1174,10 @@ function genInforme(arr, desde, hasta){
   toast('Informe generado — abrilo y guarda como PDF', 4000);
 }
 
-
-// ── PAPAGAYO & OTROS DISTRIBUIDORES ───────────────────────────────────────
-function setPapagayo(val){
-  if(!curV) return;
-  curV.store.papagayo = curV.store.papagayo === val ? '' : val;
-  var si = document.getElementById('pap-si');
-  var no = document.getElementById('pap-no');
-  if(si) si.className = 'dist-tog' + (curV.store.papagayo==='si' ? ' d-si' : '');
-  if(no) no.className = 'dist-tog' + (curV.store.papagayo==='no' ? ' d-no' : '');
-  // Auto-fill dist field if Papagayo selected
-  if(curV.store.papagayo==='si'){
-    var distEl = document.getElementById('fdist');
-    if(distEl && !distEl.value){ distEl.value='Papagayo'; curV.store.dist='Papagayo'; }
-  }
-}
-
-function renderOtrosDist(){
-  var el = document.getElementById('otros-dist-list'); if(!el) return;
-  el.innerHTML = '';
-  if(!curV || !curV.store.otrosDist) return;
-  curV.store.otrosDist.forEach(function(d, i){
-    var row = document.createElement('div'); row.className = 'otros-dist-item';
-    row.innerHTML = '<input type="text" placeholder="Nombre del distribuidor..." value="'+(d||'')+'" oninput="updateOtroDist('+i+',this.value)">' +
-      '<button class="otros-dist-del" onclick="removeOtroDist('+i+')">&#x2715;</button>';
-    el.appendChild(row);
-  });
-}
-
-function addOtroDist(){
-  if(!curV.store.otrosDist) curV.store.otrosDist = [];
-  curV.store.otrosDist.push('');
-  renderOtrosDist();
-  // Focus last input
-  setTimeout(function(){
-    var inputs = document.getElementById('otros-dist-list').querySelectorAll('input');
-    if(inputs.length) inputs[inputs.length-1].focus();
-  }, 100);
-}
-
-function updateOtroDist(i, val){
-  if(curV.store.otrosDist) curV.store.otrosDist[i] = val;
-}
-
-function removeOtroDist(i){
-  curV.store.otrosDist.splice(i,1);
-  renderOtrosDist();
-}
-
-function resetPapagayoUI(){
-  var si = document.getElementById('pap-si');
-  var no = document.getElementById('pap-no');
-  if(si) si.className = 'dist-tog';
-  if(no) no.className = 'dist-tog';
-  renderOtrosDist();
-}
-
-function repopulatePapagayoUI(){
-  if(!curV) return;
-  var val = curV.store.papagayo || '';
-  var si = document.getElementById('pap-si');
-  var no = document.getElementById('pap-no');
-  if(si) si.className = 'dist-tog' + (val==='si' ? ' d-si' : '');
-  if(no) no.className = 'dist-tog' + (val==='no' ? ' d-no' : '');
-  renderOtrosDist();
-}
-
 // ── INIT ───────────────────────────────────────────────────────────────────
 renderHome();
+// Auto-load from cloud on startup
+setTimeout(function(){ loadFromCloud(); }, 500);
 </script>
 </body>
 </html>
