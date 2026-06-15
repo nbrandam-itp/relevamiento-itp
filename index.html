@@ -236,13 +236,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4CD; Localizaci&oacute;n</div>
       <button class="loc-btn" id="loc-btn" onclick="getLoc()">&#x1F4CD; Detectar ubicaci&oacute;n autom&aacute;ticamente</button>
       <div class="loc-res" id="loc-res"></div>
-      <div class="f"><label>Nombre *</label><input type="text" id="fn" placeholder="Ej: Mercalatina"></div>
-      <div class="f"><label>Direcci&oacute;n</label><input type="text" id="fd" placeholder="Calle y n&uacute;mero"></div>
+      <div class="f"><label>Nombre *</label><input type="text" id="fn" placeholder="Ej: Mercalatina" oninput="syncField('nombre',this.value)"></div>
+      <div class="f"><label>Direcci&oacute;n</label><input type="text" id="fd" placeholder="Calle y n&uacute;mero" oninput="syncField('dir',this.value)"></div>
       <div class="two">
         <div class="mf"><label>Zona</label>
           <select id="fz"><option value="">—</option><option>Sants-Montju&iuml;c</option><option>Eixample</option><option>Sant Mart&iacute;</option><option>Horta-Guinard&oacute;</option><option>Sant Andreu</option><option>Nou Barris</option><option>Hospitalet</option><option>Cornell&agrave;</option><option>Santa Coloma</option><option>Badalona</option><option>Otra</option></select>
         </div>
-        <div class="mf"><label>Tel&eacute;fono</label><input type="tel" id="ft" placeholder="+34 6xx xxx xxx"></div>
+        <div class="mf"><label>Tel&eacute;fono</label><input type="tel" id="ft" placeholder="+34 6xx xxx xxx" oninput="syncField('tel',this.value)"></div>
       </div>
       <div class="two">
         <div class="mf"><label>Tipo</label>
@@ -255,7 +255,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
     </div>
     <div class="card" style="padding:14px">
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4E6; Distribuidor</div>
-      <div class="f"><label>&iquest;Qui&eacute;n les surte?</label><input type="text" id="fdist" placeholder="Papagayo, Distribar, directo..."></div>
+      <div class="f"><label>&iquest;Qui&eacute;n les surte?</label><input type="text" id="fdist" placeholder="Papagayo, Distribar, directo..." oninput="syncField('dist',this.value)"></div>
       <div class="two">
         <div class="mf"><label>Satisfacci&oacute;n</label>
           <select id="fsat"><option value="">—</option><option>Muy contento</option><option>Contento</option><option>Regular</option><option>Insatisfecho</option></select>
@@ -265,13 +265,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
         </div>
       </div>
       <div class="f"><label>&#x26A0;&#xFE0F; Problemas con el distribuidor</label>
-        <textarea id="fprob" rows="3" placeholder="No cambia vencidos, llega rota, no visita seguido..."></textarea>
+        <textarea id="fprob" rows="3" oninput="syncField('prob',this.value)" placeholder="No cambia vencidos, llega rota, no visita seguido..."></textarea>
       </div>
     </div>
     <div class="card" style="padding:14px">
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4DD; Observaciones</div>
-      <div class="f"><label>Notas generales</label><textarea id="fnotas" rows="2" placeholder="Estado del local, actitud del due&ntilde;o..."></textarea></div>
-      <div class="f"><label>&#x2705; Pr&oacute;xima acci&oacute;n</label><input type="text" id="faccion" placeholder="Ej: Volver con muestra cachapa..."></div>
+      <div class="f"><label>Notas generales</label><textarea id="fnotas" rows="2" oninput="syncField('notas',this.value)" placeholder="Estado del local, actitud del due&ntilde;o..."></textarea></div>
+      <div class="f"><label>&#x2705; Pr&oacute;xima acci&oacute;n</label><input type="text" id="faccion" placeholder="Ej: Volver con muestra cachapa..." oninput="syncField('accion',this.value)"></div>
     </div>
     <button class="btn btn-brand" onclick="startVisit()">Ir al relevamiento &#x2192;</button>
   </div>
@@ -280,7 +280,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 <!-- CATS -->
 <div class="sc" id="s-cats">
   <div class="tb">
-    <button class="tb-bk" onclick="go('s-home')">&#x2190;</button>
+    <button class="tb-bk" onclick="goBackToNew()">&#x2190;</button>
     <div style="flex:1"><div class="tb-t" id="cats-n">—</div><div class="tb-s">Toc&aacute; una categor&iacute;a</div></div>
     <button class="tb-btn" onclick="goSum()">Listo &#x2713;</button>
   </div>
@@ -466,6 +466,34 @@ function getLoc(){
 }
 
 // ── NEW VISIT ──────────────────────────────────────────────────────────────
+function syncField(field, value){
+  if(curV && curV.store) curV.store[field] = value;
+}
+
+function goHomeFromNew(){
+  if(curV && curV.store && curV.store.nombre){
+    if(!confirm('Perderás los datos. ¿Continuar?')) return;
+  }
+  curV = null;
+  go('s-home');
+}
+
+function goBackToNew(){
+  if(!curV){ go('s-home'); return; }
+  var s = curV.store;
+  var sv = function(id,val){ var e=document.getElementById(id); if(e) e.value=val||''; };
+  sv('fn', s.nombre); sv('fd', s.dir); sv('fz', s.zona); sv('ft', s.tel);
+  sv('ftp', s.tipo); sv('fsz', s.size); sv('fdist', s.dist);
+  sv('fsat', s.sat); sv('ffreq', s.freq); sv('fprob', s.prob);
+  sv('fnotas', s.notas); sv('faccion', s.accion);
+  if(s.geoAddr){
+    var res=document.getElementById('loc-res');
+    if(res){ res.style.display='block'; res.textContent='Ubicacion: '+s.geoAddr; }
+  }
+  repopulatePapagayoUI();
+  go('s-new');
+}
+
 function goNew(){
   ['fn','fd','ft','fdist','fprob','fnotas','faccion'].forEach(function(id){
     var e = document.getElementById(id); if(e) e.value = '';
@@ -481,7 +509,7 @@ function goNew(){
     synced: false,
     date: new Date().toLocaleDateString('es-ES'),
     isoDate: new Date().toISOString().slice(0,10),
-    store: {nombre:'',dir:'',zona:'',tel:'',tipo:'',size:'',dist:'',sat:'',freq:'',prob:'',notas:'',accion:'',lat:null,lng:null,geoAddr:''},
+    store: {nombre:'',dir:'',zona:'',tel:'',tipo:'',size:'',dist:'',papagayo:'',otrosDist:[],sat:'',freq:'',prob:'',notas:'',accion:'',lat:null,lng:null,geoAddr:''},
     cats: newCatState()
   };
   go('s-new');
@@ -666,6 +694,8 @@ function renderSum(v, cid){
   h += '<div class="sum-hero"><div class="sum-n">'+v.store.nombre+'</div>';
   h += '<div class="sum-m">'+[v.store.dir||v.store.geoAddr,v.store.zona].filter(Boolean).join(' · ')+'</div>';
   if(v.store.dist) h += '<div class="sum-m">Dist: '+v.store.dist+(v.store.sat?' · '+v.store.sat:'')+'</div>';
+  if(v.store.papagayo) h += '<div class="sum-m">Papagayo: <strong style="color:'+(v.store.papagayo==='si'?'#16803C':'#B91C1C')+'">'+( v.store.papagayo==='si'?'✓ Sí':'✗ No')+'</strong></div>';
+  if(v.store.otrosDist&&v.store.otrosDist.filter(Boolean).length) h += '<div class="sum-m">Otros dist: '+v.store.otrosDist.filter(Boolean).join(', ')+'</div>';
   if(v.store.lat) h += '<div style="margin-top:4px">'+mapL+'</div>';
   h += '<div style="margin-top:8px">'+sb+'</div></div>';
   h += '<div class="st4">';
@@ -718,6 +748,7 @@ function buildRows(v){
   var rows = [];
   var base = [v.isoDate, v.store.nombre, v.store.dir||v.store.geoAddr||'', v.store.zona||'',
               v.store.tel||'', v.store.tipo||'', v.store.size||'', v.store.dist||'',
+              v.store.papagayo||'', (v.store.otrosDist||[]).filter(Boolean).join(', '),
               v.store.sat||'', v.store.freq||'', v.store.prob||'', v.store.notas||'',
               v.store.accion||'', v.store.lat||'', v.store.lng||''];
   CATS.forEach(function(cat){
@@ -1143,6 +1174,60 @@ async function syncFromCloud() {
     toast('Sin datos en la nube aún', 2000);
   }
 }
+
+
+// ── PAPAGAYO & OTROS DISTRIBUIDORES ──────────────────────────────────────
+function setPapagayo(val){
+  if(!curV) return;
+  curV.store.papagayo = curV.store.papagayo === val ? '' : val;
+  var si=document.getElementById('pap-si'), no=document.getElementById('pap-no');
+  if(si) si.style.cssText = curV.store.papagayo==='si' ? 'flex:1;padding:11px;border:1.5px solid #86EFAC;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:#DCFCE7;color:#16803C;font-family:DM Sans,sans-serif' : 'flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:DM Sans,sans-serif';
+  if(no) no.style.cssText = curV.store.papagayo==='no' ? 'flex:1;padding:11px;border:1.5px solid #FCA5A5;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:#FEE2E2;color:#B91C1C;font-family:DM Sans,sans-serif' : 'flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:DM Sans,sans-serif';
+  if(curV.store.papagayo==='si'){
+    var d=document.getElementById('fdist'); if(d&&!d.value){d.value='Papagayo';curV.store.dist='Papagayo';}
+  }
+}
+
+function resetPapagayoUI(){
+  var si=document.getElementById('pap-si'),no=document.getElementById('pap-no');
+  var base='flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:DM Sans,sans-serif';
+  if(si) si.style.cssText=base;
+  if(no) no.style.cssText=base;
+  var el=document.getElementById('otros-dist-list'); if(el) el.innerHTML='';
+}
+
+function repopulatePapagayoUI(){
+  if(!curV) return;
+  setPapagayo(curV.store.papagayo||'__none__');
+  if(curV.store.papagayo) setPapagayo(curV.store.papagayo);
+  renderOtrosDist();
+}
+
+function renderOtrosDist(){
+  var el=document.getElementById('otros-dist-list'); if(!el) return;
+  el.innerHTML='';
+  if(!curV||!curV.store.otrosDist) return;
+  curV.store.otrosDist.forEach(function(d,i){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    row.innerHTML='<input type="text" placeholder="Nombre del distribuidor..." value="'+(d||'')+'" oninput="updateOtroDist('+i+',this.value)" style="flex:1;font-size:14px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font-family:DM Sans,sans-serif">'+
+      '<button onclick="removeOtroDist('+i+')" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">&#x2715;</button>';
+    el.appendChild(row);
+  });
+}
+
+function addOtroDist(){
+  if(!curV.store.otrosDist) curV.store.otrosDist=[];
+  curV.store.otrosDist.push('');
+  renderOtrosDist();
+  setTimeout(function(){
+    var inputs=document.getElementById('otros-dist-list').querySelectorAll('input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },100);
+}
+
+function updateOtroDist(i,val){ if(curV.store.otrosDist) curV.store.otrosDist[i]=val; }
+function removeOtroDist(i){ curV.store.otrosDist.splice(i,1); renderOtrosDist(); }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 renderHome();
