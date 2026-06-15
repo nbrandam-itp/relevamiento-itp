@@ -255,13 +255,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
     </div>
     <div class="card" style="padding:14px">
       <div class="ch" style="margin:-14px -14px 14px;border-radius:12px 12px 0 0">&#x1F4E6; Distribuidor</div>
-      <div class="f"><label>&iquest;Qui&eacute;n les surte?</label><input type="text" id="fdist" placeholder="Papagayo, Distribar, directo..." oninput="syncField('dist',this.value)"></div>
+      <div class="f">
+        <label>&#x1F4E6; &iquest;Atendido por <strong>Papagayo</strong>?</label>
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <button type="button" id="pap-si" onclick="setPapagayo('si')" style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif">&#x2713; S&iacute;, Papagayo</button>
+          <button type="button" id="pap-no" onclick="setPapagayo('no')" style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif">&#x2717; No es Papagayo</button>
+        </div>
+      </div>
+      <div class="f"><label>Distribuidor principal</label><input type="text" id="fdist" placeholder="Papagayo, Distribar, directo..." oninput="syncField('dist',this.value)"></div>
+      <div class="f">
+        <label>Otros distribuidores presentes en la tienda</label>
+        <div id="otros-dist-list"></div>
+        <button type="button" onclick="addOtroDist()" style="width:100%;padding:9px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px">+ Agregar otro distribuidor</button>
+      </div>
       <div class="two">
         <div class="mf"><label>Satisfacci&oacute;n</label>
-          <select id="fsat"><option value="">—</option><option>Muy contento</option><option>Contento</option><option>Regular</option><option>Insatisfecho</option></select>
+          <select id="fsat" onchange="syncField('sat',this.value)"><option value="">—</option><option>Muy contento</option><option>Contento</option><option>Regular</option><option>Insatisfecho</option></select>
         </div>
         <div class="mf"><label>Frecuencia</label>
-          <select id="ffreq"><option value="">—</option><option>Semanal</option><option>Quincenal</option><option>Mensual</option><option>Sin regularidad</option></select>
+          <select id="ffreq" onchange="syncField('freq',this.value)"><option value="">—</option><option>Semanal</option><option>Quincenal</option><option>Mensual</option><option>Sin regularidad</option></select>
         </div>
       </div>
       <div class="f"><label>&#x26A0;&#xFE0F; Problemas con el distribuidor</label>
