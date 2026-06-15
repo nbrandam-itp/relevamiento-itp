@@ -439,42 +439,76 @@ function go(id){
 function getLoc(){
   var btn = document.getElementById('loc-btn');
   var res = document.getElementById('loc-res');
-  btn.textContent = 'Detectando...';
-  if(!navigator.geolocation){ toast('Geolocalización no disponible'); return; }
-  navigator.geolocation.getCurrentPosition(function(pos){
+
+  if(!navigator.geolocation){
+    res.style.display='block';
+    res.textContent='GPS no disponible en este navegador';
+    return;
+  }
+
+  btn.textContent = '⏳ Detectando...';
+  btn.disabled = true;
+
+  function onSuccess(pos){
     var lat = pos.coords.latitude, lng = pos.coords.longitude;
-    btn.textContent = 'Detectar ubicación automáticamente';
+    btn.textContent = '📍 Detectar ubicación';
+    btn.disabled = false;
     res.style.display = 'block';
-    res.textContent = 'Buscando dirección...';
+    res.textContent = '📍 GPS: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + ' — Buscando dirección...';
     if(curV){ curV.store.lat = lat; curV.store.lng = lng; }
-    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json')
+    // Reverse geocode
+    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=es')
       .then(function(r){ return r.json(); })
       .then(function(d){
         var a = d.address || {};
         var street = [a.road, a.house_number].filter(Boolean).join(', ');
-        var city = a.suburb || a.neighbourhood || a.city_district || a.city || '';
-        var full = street || d.display_name || lat.toFixed(5)+', '+lng.toFixed(5);
-        res.textContent = 'Ubicación: ' + full + (city ? ' · ' + city : '');
+        var city = a.suburb||a.neighbourhood||a.city_district||a.city||'';
+        var full = street || d.display_name || (lat.toFixed(5)+', '+lng.toFixed(5));
+        res.textContent = '📍 ' + full + (city?' · '+city:'');
         var dirEl = document.getElementById('fd');
-        if(dirEl && !dirEl.value) dirEl.value = street || '';
+        if(dirEl && !dirEl.value){ dirEl.value = street||''; syncField('dir', dirEl.value); }
         var zonaEl = document.getElementById('fz');
         if(zonaEl && !zonaEl.value){
           var cl = (city||'').toLowerCase();
-          if(cl.includes('hospitalet')) zonaEl.value = 'Hospitalet';
-          else if(cl.includes('badalona')) zonaEl.value = 'Badalona';
-          else if(cl.includes('coloma')) zonaEl.value = 'Santa Coloma';
-          else if(cl.includes('cornell')) zonaEl.value = 'Cornellà';
+          if(cl.includes('hospitalet')){ zonaEl.value='Hospitalet'; syncField('zona','Hospitalet'); }
+          else if(cl.includes('badalona')){ zonaEl.value='Badalona'; syncField('zona','Badalona'); }
+          else if(cl.includes('coloma')){ zonaEl.value='Santa Coloma'; syncField('zona','Santa Coloma'); }
+          else if(cl.includes('cornell')){ zonaEl.value='Cornellà'; syncField('zona','Cornellà'); }
         }
-        if(curV){ curV.store.geoAddr = full; }
-        toast('Ubicación detectada');
+        if(curV){ curV.store.geoAddr = full; curV.store.lat = lat; curV.store.lng = lng; }
+        toast('📍 Ubicación detectada');
       })
       .catch(function(){
-        res.textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+        // Geocoding failed but we have GPS coords - that's still useful
+        res.textContent = '📍 ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+        if(curV){ curV.store.geoAddr = lat.toFixed(6)+', '+lng.toFixed(6); }
+        toast('📍 Coordenadas guardadas');
       });
-  }, function(){
-    document.getElementById('loc-btn').textContent = 'Detectar ubicación automáticamente';
-    toast('No se pudo obtener ubicación');
-  }, {enableHighAccuracy:true, timeout:10000});
+  }
+
+  function onError(err){
+    btn.textContent = '📍 Detectar ubicación';
+    btn.disabled = false;
+    var msg = '';
+    if(err.code === 1) msg = 'Permiso denegado — activá el GPS en Ajustes del móvil';
+    else if(err.code === 2) msg = 'GPS no disponible — intentá en exterior';
+    else if(err.code === 3) msg = 'Tiempo agotado — intentá de nuevo';
+    else msg = 'Error GPS: ' + err.message;
+    res.style.display = 'block';
+    res.textContent = '⚠️ ' + msg;
+    toast(msg, 4000);
+  }
+
+  // Try high accuracy first, fallback to low accuracy
+  navigator.geolocation.getCurrentPosition(onSuccess, function(err){
+    if(err.code === 3){
+      // Timeout - try with lower accuracy and longer timeout
+      navigator.geolocation.getCurrentPosition(onSuccess, onError,
+        {enableHighAccuracy:false, timeout:20000, maximumAge:60000});
+    } else {
+      onError(err);
+    }
+  }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
 }
 
 // ── NEW VISIT ──────────────────────────────────────────────────────────────
