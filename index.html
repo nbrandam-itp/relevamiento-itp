@@ -170,10 +170,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 .dsc{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:10px;text-align:center}
 .dsc-v{font-size:20px;font-weight:700;color:var(--accent)}
 .dsc-l{font-size:10px;color:var(--muted);margin-top:2px}
-
-/* CLOUD STATUS */
-#cloud-status{ animation: pulse 1.5s infinite; }
-@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.6} }
 </style>
 </head>
 <body>
@@ -220,13 +216,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
     <button class="hbtn hbtn-p" onclick="goNew()">+ Nueva visita</button>
     <button class="hbtn hbtn-s" onclick="goRd()">&#x1F4CA; Historial</button>
   </div>
-  <div id="cloud-status" style="display:none;margin:6px 14px 0;padding:9px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;background:#EFF6FF;color:#1D4ED8;align-items:center;gap:8px">
-    &#x23F3; Sincronizando con la nube...
-  </div>
   <div style="padding:6px 14px 0;flex-shrink:0">
-    <button onclick="loadFromCloud()" style="width:100%;padding:10px;border:1.5px solid #BFDBFE;border-radius:var(--radius);background:#EFF6FF;color:#1D4ED8;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">
-      &#x2193; Cargar historial desde la nube
-    </button>
+    <button onclick="syncFromCloud()" style="width:100%;padding:10px;border:1.5px solid #BFDBFE;border-radius:var(--radius);background:#EFF6FF;color:#1D4ED8;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px">&#x2193; Cargar historial desde la nube</button>
   </div>
   <div class="scroll" style="padding-top:12px">
     <div class="sec-t">Visitas guardadas</div>
@@ -363,8 +354,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 
 <script>
 var SHEETS = 'https://script.google.com/macros/s/AKfycbxfbb0a3g4TPupLOYWFXHvDDCVlZLIDPFxZAQ16ErdLD5dG9uonqxFLvUMRoquIm7GIQw/exec';
-var SB_URL = 'https://owzlnbrmilqoxwuxrttf.supabase.co';
-var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93emxuYnJtaWxxb3h3dXhydHRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MDcwNDgsImV4cCI6MjA5NzA4MzA0OH0.P6J8AuT-ayE2BFhW1fPZ4PO6oN2usK_9oRX7hR86ZWU';
 var STORE_KEY = 'itp_v6';
 
 var CATS = [
@@ -394,92 +383,17 @@ var lbIdx = null;
 var lbCat = null;
 
 function loadV(){
-  // Load from localStorage (fast, offline-capable)
   try{ visits = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
   catch(e){ visits = []; }
 }
 
-async function loadFromCloud(){
-  var el = document.getElementById('cloud-status');
-  if(el){ el.textContent = 'Sincronizando con la nube...'; el.style.display='flex'; }
-  var cloudVisits = await loadFromSupabase();
-  if(cloudVisits && cloudVisits.length > 0){
-    // Merge: cloud is master, keep local-only visits not in cloud
-    var cloudIds = new Set(cloudVisits.map(function(v){ return v.id; }));
-    var localOnly = visits.filter(function(v){ return !cloudIds.has(v.id); });
-    visits = cloudVisits.concat(localOnly);
-    // Save merged to localStorage
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(visits)); }catch(e){}
-    if(el){ el.style.display='none'; }
-    renderHome();
-    toast('Historial actualizado: ' + visits.length + ' visitas', 2500);
-  } else {
-    if(el){ el.style.display='none'; }
-  }
-}
-
 function saveV(){
-  // Always save to localStorage as backup
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(visits)); }
-  catch(e){ console.warn('localStorage error:', e); }
-  return true;
-}
-
-// Save single visit to Supabase (upsert)
-async function saveToSupabase(v){
   try{
-    var body = JSON.stringify({
-      id: v.id,
-      fecha: v.date,
-      iso_date: v.isoDate,
-      store: v.store,
-      cats: v.cats,
-      synced: true,
-      updated_at: new Date().toISOString()
-    });
-    var resp = await fetch(SB_URL + '/rest/v1/visitas', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: body
-    });
-    return resp.ok || resp.status === 201 || resp.status === 200;
+    localStorage.setItem(STORE_KEY, JSON.stringify(visits));
+    return true;
   } catch(e){
-    console.warn('Supabase save error:', e);
+    toast('Error al guardar: ' + e.message);
     return false;
-  }
-}
-
-// Load all visits from Supabase
-async function loadFromSupabase(){
-  try{
-    var resp = await fetch(SB_URL + '/rest/v1/visitas?select=*&order=iso_date.desc', {
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY
-      }
-    });
-    if(!resp.ok) return null;
-    var data = await resp.json();
-    if(!Array.isArray(data) || data.length === 0) return null;
-    // Reconstruct visit objects from Supabase rows
-    return data.map(function(row){
-      return {
-        id: row.id,
-        date: row.fecha,
-        isoDate: row.iso_date,
-        store: row.store || {},
-        cats: row.cats || newCatState(),
-        synced: true
-      };
-    });
-  } catch(e){
-    console.warn('Supabase load error:', e);
-    return null;
   }
 }
 
@@ -788,24 +702,15 @@ async function doSaveLocal(){
   if(!curV){ toast('Error: sin visita activa'); return; }
   var idx = visits.findIndex(function(v){ return v.id === curV.id; });
   if(idx >= 0) visits[idx] = curV; else visits.unshift(curV);
-  saveV(); // Save to localStorage immediately
-  toast('Guardando...', 2000);
-  // Try Supabase in background
-  var sbOk = await saveToSupabase(curV);
-  if(sbOk){
-    curV.synced = true;
-    var idx2 = visits.findIndex(function(v){ return v.id === (curV&&curV.id); });
-    if(idx2 >= 0) visits[idx2].synced = true;
-    saveV();
-    toast('Guardado en la nube', 2500);
-  } else {
-    curV.synced = false;
-    saveV();
-    toast('Guardado local (sin conexion a nube)', 2500);
-  }
+  saveV();
   curV = null;
   renderHome();
   go('s-home');
+  toast('Guardado local', 1500);
+  // Save to Supabase in background
+  var v = visits[0];
+  var ok = await sbSave(v);
+  if(ok){ v.synced = true; saveV(); renderHome(); toast('Guardado en la nube', 2000); }
 }
 
 // ── SAVE CLOUD ─────────────────────────────────────────────────────────────
@@ -1160,11 +1065,7 @@ function genInforme(arr, desde, hasta){
   bd+='</div>';
   bd+='<div class="np" style="text-align:center;padding:20px;background:#F4F5F7"><button onclick="window.print()" style="padding:13px 28px;background:#1A3C5C;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">Imprimir / Guardar PDF</button><button onclick="window.close()" style="padding:13px 22px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button></div>';
 
-  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'
-/* CLOUD STATUS */
-#cloud-status{ animation: pulse 1.5s infinite; }
-@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.6} }
-</style></head><body>'+bd+'</body></html>';
+  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'</style></head><body>'+bd+'</body></html>';
   var blob = new Blob([htm], {type:'text/html;charset=utf-8'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -1174,10 +1075,79 @@ function genInforme(arr, desde, hasta){
   toast('Informe generado — abrilo y guarda como PDF', 4000);
 }
 
+
+// ── SUPABASE CONFIG ────────────────────────────────────────────────────────
+var SB_URL = 'https://owzlnbrmilqoxwuxrttf.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93emxuYnJtaWxxb3h3dXhydHRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MDcwNDgsImV4cCI6MjA5NzA4MzA0OH0.P6J8AuT-ayE2BFhW1fPZ4PO6oN2usK_9oRX7hR86ZWU';
+
+async function sbSave(v) {
+  try {
+    var r = await fetch(SB_URL + '/rest/v1/visitas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        id: v.id,
+        fecha: v.date,
+        iso_date: v.isoDate,
+        store: v.store,
+        cats: v.cats,
+        updated_at: new Date().toISOString()
+      })
+    });
+    return r.ok || r.status === 201;
+  } catch(e) { return false; }
+}
+
+async function sbLoad() {
+  try {
+    var r = await fetch(SB_URL + '/rest/v1/visitas?select=*&order=iso_date.desc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!r.ok) return null;
+    var data = await r.json();
+    if (!Array.isArray(data) || !data.length) return null;
+    return data.map(function(row) {
+      return {
+        id: row.id,
+        date: row.fecha,
+        isoDate: row.iso_date,
+        store: row.store || {},
+        cats: row.cats || newCatState(),
+        synced: true
+      };
+    });
+  } catch(e) { return null; }
+}
+
+async function syncFromCloud() {
+  toast('Cargando desde la nube...', 3000);
+  var cloud = await sbLoad();
+  if (cloud && cloud.length) {
+    var localIds = new Set(visits.map(function(v){ return v.id; }));
+    cloud.forEach(function(v) {
+      if (!localIds.has(v.id)) visits.unshift(v);
+      else {
+        var idx = visits.findIndex(function(x){ return x.id === v.id; });
+        if (idx >= 0) visits[idx] = v;
+      }
+    });
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(visits)); } catch(e) {}
+    renderHome();
+    toast(cloud.length + ' visitas cargadas desde la nube', 3000);
+  } else {
+    toast('Sin datos en la nube aún', 2000);
+  }
+}
+
 // ── INIT ───────────────────────────────────────────────────────────────────
 renderHome();
-// Auto-load from cloud on startup
-setTimeout(function(){ loadFromCloud(); }, 500);
+// Auto load from Supabase on start
+setTimeout(function(){ syncFromCloud(); }, 1000);
 </script>
 </body>
 </html>
