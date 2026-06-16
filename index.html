@@ -682,7 +682,7 @@ function openCat(id){
     var row = document.createElement('div'); row.className = 'br';
     var sid = 'bsi_' + b.replace(/[^a-zA-Z0-9]/g,'_');
     var nid = 'bno_' + b.replace(/[^a-zA-Z0-9]/g,'_');
-    row.innerHTML = '<div><div class="br-n">'+b+'</div><div class="br-s">Marca ITP</div></div><div class="togs"><button class="tog '+(val==='si'?'t-si':'')+'" id="'+sid+'" onclick="setBrand('+b+','si')">Si</button><button class="tog '+(val==='no'?'t-no':'')+'" id="'+nid+'" onclick="setBrand('+b+','no')">No</button></div>';
+    row.innerHTML = '<div><div class="br-n">'+b+'</div><div class="br-s">Marca ITP</div></div><div class="togs"><button class="tog '+(val==='si'?'t-si':'')+'" id="'+sid+'" onclick="setBrand('+b+',\'si\')">Si</button><button class="tog '+(val==='no'?'t-no':'')+'" id="'+nid+'" onclick="setBrand('+b+',\'no\')">No</button></div>';
     bEl.appendChild(row);
   });
   // Prices
