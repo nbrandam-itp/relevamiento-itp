@@ -1182,7 +1182,7 @@ function genInforme(arr, desde, hasta){
   var freqCount={};
   var satCount={'Muy contento':0,'Contento':0,'Regular':0,'Insatisfecho':0};
   var satScore=0, satTotal=0;
-  var problemTiendas=[];
+  var problemTiendas=[]; var buenClientes=[]; var conclusiones=[];
 
   // Price benchmark per category/line: { catName_line: {itp:[], comp:[{marca,precio}]} }
   var priceBenchmark={};
@@ -1223,6 +1223,8 @@ function genInforme(arr, desde, hasta){
       problemTiendas.push(v.store.nombre);
     }
     if(v.store.accion) acciones.push({tienda:v.store.nombre,accion:v.store.accion,fecha:v.isoDate||v.date});
+    if(v.store.buenCliente==='si') buenClientes.push({tienda:v.store.nombre,zona:v.store.zona||'—',dist:v.store.dist||'—',conclusion:v.store.conclusion||''});
+    if(v.store.conclusion) conclusiones.push({tienda:v.store.nombre,zona:v.store.zona||'—',fecha:v.isoDate||v.date,texto:v.store.conclusion});
 
     CATS.forEach(function(cat){
       var cs=v.cats[cat.id];if(!cs)return;
@@ -1421,6 +1423,18 @@ function genInforme(arr, desde, hasta){
     if(vp.length){phH+='<div style="margin-bottom:18px"><div style="font-size:13px;font-weight:700;color:#1A3C5C;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E2E5EA">'+v.store.nombre+' — '+(v.isoDate||v.date)+' — '+(v.store.zona||'')+'</div><div style="display:flex;flex-wrap:wrap;gap:10px">';vp.forEach(function(p){phH+='<div style="text-align:center"><img src="'+p.src+'" style="width:180px;height:135px;object-fit:cover;border-radius:8px;border:2px solid #E2E5EA"><div style="font-size:10px;color:#6B7280;margin-top:3px">'+p.cat+'</div></div>';});phH+='</div></div>';}
   });
 
+  // Mejores clientes ITP
+  var bcR = '';
+  buenClientes.forEach(function(b){
+    bcR += '<div style="background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:8px"><div style="font-weight:700;font-size:13px">⭐ '+b.tienda+' — '+b.zona+' — '+b.dist+'</div>'+(b.conclusion?'<div style="font-size:12px;margin-top:4px;color:#374151">'+b.conclusion+'</div>':'')+'</div>';
+  });
+
+  // Conclusiones cualitativas
+  var conclR = '';
+  conclusiones.forEach(function(c){
+    conclR += '<div style="background:#FFFBEB;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:8px"><div style="font-weight:700;font-size:13px">'+c.tienda+' — '+c.zona+' — '+c.fecha+'</div><div style="font-size:12px;margin-top:4px;color:#374151">'+c.texto+'</div></div>';
+  });
+
   // Bullets
   var bl='<li>Se visitaron <strong>'+arr.length+' tiendas</strong> en el periodo '+rLabel+'.</li>';
   bl+='<li><strong>'+papSi+' de '+totalTiendas+' tiendas ('+papPct+'%)</strong> están atendidas por Papagayo'+(papNo>0?'; <strong>'+papNo+' tiendas ('+papNoPct+'%)</strong> trabajan con otro distribuidor.':'.')+'</li>';
@@ -1429,6 +1443,7 @@ function genInforme(arr, desde, hasta){
   bl+='<li>Se relevaron <strong>'+tC+' productos de la competencia</strong> en gondola.</li>';
   if(distProbs.length) bl+='<li><strong>'+distProbs.length+' tienda'+(distProbs.length>1?'s':'')+' con problemas de distribuidor</strong> — requiere seguimiento urgente.</li>';
   if(acciones.length) bl+='<li><strong>'+acciones.length+' accion'+(acciones.length>1?'es':'')+' pendiente'+(acciones.length>1?'s':'')+' de seguimiento.</strong></li>';
+  if(buenClientes.length) bl+='<li><strong>'+buenClientes.length+' tienda'+(buenClientes.length>1?'s':'')+' identificada'+(buenClientes.length>1?'s':'')+' como buen cliente ITP</strong> — relacion comercial solida.</li>';
 
   var CSS = 'body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111;font-size:13px;line-height:1.5}';
   CSS += '.pg{max-width:980px;margin:0 auto;padding:32px 28px}';
@@ -1480,6 +1495,8 @@ function genInforme(arr, desde, hasta){
   if(pR) bd+='<div class="sec"><div class="st">Detalle de precios ITP relevados en gondola</div><table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoria</th><th>Producto</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>'+pR+'</tbody></table></div>';
   if(compR) bd+='<div class="sec"><div class="st">Competencia relevada por categoria y tienda</div><table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoria</th><th>Marca</th><th>Producto</th><th>Precio</th><th>Obs.</th><th>Fecha</th></tr></thead><tbody>'+compR+'</tbody></table></div>';
   if(acR) bd+='<div class="sec"><div class="st">Proximas acciones comerciales</div><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Accion pendiente</th></tr></thead><tbody>'+acR+'</tbody></table></div>';
+  if(bcR) bd+='<div class="sec"><div class="st">⭐ Mejores clientes ITP identificados</div>'+bcR+'</div>';
+  if(conclR) bd+='<div class="sec"><div class="st">💬 Conclusiones cualitativas por tienda</div>'+conclR+'</div>';
   if(phH) bd+='<div class="sec"><div class="st">Registro fotografico de gondola</div>'+phH+'</div>';
   bd+='<div class="sec"><div class="st">Resumen ejecutivo del periodo</div><div class="ab"><strong>Hallazgos principales:</strong><ul style="margin:8px 0 0 16px;font-size:12px;line-height:1.8">'+bl+'</ul></div></div>';
   bd+='<div class="footer">Intertropico · Desarrollo Comercial Cataluna 2026 · Nicolas Brandam — CONFIDENCIAL<br>Generado el '+gDate+' desde la app de campo</div>';
