@@ -682,7 +682,7 @@ function openCat(id){
     var row = document.createElement('div'); row.className = 'br';
     var sid = 'bsi_' + b.replace(/[^a-zA-Z0-9]/g,'_');
     var nid = 'bno_' + b.replace(/[^a-zA-Z0-9]/g,'_');
-    row.innerHTML = '<div><div class="br-n">'+b+'</div><div class="br-s">Marca ITP</div></div><div class="togs"><button class="tog '+(val==='si'?'t-si':'')+'" id="'+sid+'" onclick="setBrand(\''+b+'\',\'si\')">Si</button><button class="tog '+(val==='no'?'t-no':'')+'" id="'+nid+'" onclick="setBrand(\''+b+'\',\'no\')">No</button></div>';
+    row.innerHTML = '<div><div class="br-n">'+b+'</div><div class="br-s">Marca ITP</div></div><div class="togs"><button class="tog '+(val==='si'?'t-si':'')+'" id="'+sid+'" onclick="setBrand(''+b+'','si')">Si</button><button class="tog '+(val==='no'?'t-no':'')+'" id="'+nid+'" onclick="setBrand(''+b+'','no')">No</button></div>';
     bEl.appendChild(row);
   });
   // Prices
@@ -692,7 +692,7 @@ function openCat(id){
     var val = cs.prices[line] || '';
     var row = document.createElement('div'); row.className = 'pr-row';
     var pid = 'p_' + line.replace(/[^a-zA-Z0-9]/g,'_');
-    row.innerHTML = '<div class="pr-lbl">'+line+'</div><input type="number" class="pr-inp" id="'+pid+'" inputmode="decimal" step="0.01" placeholder="—" value="'+val+'" oninput="setPrice(\''+line+'\',this.value)">';
+    row.innerHTML = '<div class="pr-lbl">'+line+'</div><input type="number" class="pr-inp" id="'+pid+'" inputmode="decimal" step="0.01" placeholder="—" value="'+val+'" oninput="setPrice(''+line+'',this.value)">';
     pEl.appendChild(row);
   });
   renderCompList();
@@ -714,34 +714,34 @@ function renderSpecial(cat, cs){
     // PULPAS
     html += '<div class="cong-block"><div class="cong-block-title">&#x1F347; Pulpas de fruta</div>';
     html += '<div class="cong-row"><label>&iquest;Tiene pulpas en g&oacute;ndola?</label><div style="display:flex;gap:8px">';
-    html += '<button type="button" onclick="setSpecial(\'pulpaTiene\',\'si\')" id="sp-pulpaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
-    html += '<button type="button" onclick="setSpecial(\'pulpaTiene\',\'no\')" id="sp-pulpaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
+    html += '<button type="button" onclick="setSpecial('pulpaTiene','si')" id="sp-pulpaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
+    html += '<button type="button" onclick="setSpecial('pulpaTiene','no')" id="sp-pulpaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
     if(cs.special.pulpaTiene === 'si'){
-      html += '<div class="cong-row"><label>&iquest;A qui&eacute;n le compra las pulpas?</label><input type="text" id="sp-pulpaProveedor" value="'+(cs.special.pulpaProveedor||'')+'" placeholder="Nombre del proveedor..." oninput="setSpecial(\'pulpaProveedor\',this.value)"></div>';
+      html += '<div class="cong-row"><label>&iquest;A qui&eacute;n le compra las pulpas?</label><input type="text" id="sp-pulpaProveedor" value="'+(cs.special.pulpaProveedor||'')+'" placeholder="Nombre del proveedor..." oninput="setSpecial('pulpaProveedor',this.value)"></div>';
       html += '<div class="cong-row"><label>&iquest;Esa pulpa es de ITP (Frugy)?</label><div style="display:flex;gap:8px">';
-      html += '<button type="button" onclick="setSpecial(\'pulpaEsITP\',\'si\')" id="sp-pulpaEsITP-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;, es ITP</button>';
-      html += '<button type="button" onclick="setSpecial(\'pulpaEsITP\',\'no\')" id="sp-pulpaEsITP-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; Es otra marca</button></div></div>';
+      html += '<button type="button" onclick="setSpecial('pulpaEsITP','si')" id="sp-pulpaEsITP-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;, es ITP</button>';
+      html += '<button type="button" onclick="setSpecial('pulpaEsITP','no')" id="sp-pulpaEsITP-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; Es otra marca</button></div></div>';
     }
     html += '</div>';
 
     // PATATAS / PAPAS CONGELADAS
     html += '<div class="cong-block"><div class="cong-block-title">&#x1F954; Patatas congeladas</div>';
     html += '<div class="cong-row"><label>&iquest;Vende patatas congeladas?</label><div style="display:flex;gap:8px">';
-    html += '<button type="button" onclick="setSpecial(\'papaTiene\',\'si\')" id="sp-papaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
-    html += '<button type="button" onclick="setSpecial(\'papaTiene\',\'no\')" id="sp-papaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
+    html += '<button type="button" onclick="setSpecial('papaTiene','si')" id="sp-papaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
+    html += '<button type="button" onclick="setSpecial('papaTiene','no')" id="sp-papaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
     if(cs.special.papaTiene === 'si'){
-      html += '<div class="cong-row"><label>Marca de la competencia</label><input type="text" id="sp-papaCompMarca" value="'+(cs.special.papaCompMarca||'')+'" placeholder="Ej: McCain, Goya..." oninput="setSpecial(\'papaCompMarca\',this.value)"></div>';
-      html += '<div class="cong-row"><label>Precio (&euro;)</label><input type="number" inputmode="decimal" step="0.01" id="sp-papaCompPrecio" value="'+(cs.special.papaCompPrecio||'')+'" placeholder="0.00" oninput="setSpecial(\'papaCompPrecio\',this.value)"></div>';
+      html += '<div class="cong-row"><label>Marca de la competencia</label><input type="text" id="sp-papaCompMarca" value="'+(cs.special.papaCompMarca||'')+'" placeholder="Ej: McCain, Goya..." oninput="setSpecial('papaCompMarca',this.value)"></div>';
+      html += '<div class="cong-row"><label>Precio (&euro;)</label><input type="number" inputmode="decimal" step="0.01" id="sp-papaCompPrecio" value="'+(cs.special.papaCompPrecio||'')+'" placeholder="0.00" oninput="setSpecial('papaCompPrecio',this.value)"></div>';
     }
     html += '</div>';
 
-    html += '<div class="cong-row" style="margin-top:4px"><label style="color:#0369A1;font-weight:700">&#x1F4E6; Posible distribuidor de congelados detectado</label><input type="text" id="sp-distCongelados" value="'+(cs.special.distCongelados||'')+'" placeholder="Nombre del distribuidor de este canal..." oninput="setSpecial(\'distCongelados\',this.value)"></div>';
+    html += '<div class="cong-row" style="margin-top:4px"><label style="color:#0369A1;font-weight:700">&#x1F4E6; Posible distribuidor de congelados detectado</label><input type="text" id="sp-distCongelados" value="'+(cs.special.distCongelados||'')+'" placeholder="Nombre del distribuidor de este canal..." oninput="setSpecial('distCongelados',this.value)"></div>';
   }
 
   if(cat.id === 'yerba'){
     var active = cs.special.clienteKurupi === 'si';
     html += '<div class="kurupi-badge'+(active?' active':'')+'">';
-    html += '<input type="checkbox" id="sp-kurupi-check" '+(active?'checked':'')+' onchange="setSpecial(\'clienteKurupi\', this.checked?\'si\':\'\')" style="width:20px;height:20px">';
+    html += '<input type="checkbox" id="sp-kurupi-check" '+(active?'checked':'')+' onchange="setSpecial('clienteKurupi', this.checked?'si':'')" style="width:20px;height:20px">';
     html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:'+(active?'#16803C':'#92400E')+'">&#x2B50; Ya es cliente Kurupi</div>';
     html += '<div style="font-size:11px;color:'+(active?'#16803C':'#92400E')+'">Marcar si ya compra Kurupi — posible entrada de nuevas yerbas ITP a futuro</div></div>';
     html += '</div>';
@@ -801,11 +801,11 @@ function renderCompList(){
     var d = document.createElement('div'); d.className = 'comp-item';
     d.innerHTML = '<button class="comp-del" onclick="rmComp('+idx+')">x</button>'+
       '<div class="two" style="margin-bottom:8px">'+
-      '<div class="mf"><label>Marca</label><input type="text" placeholder="Goya, América..." value="'+(c.marca||'')+'" oninput="upComp('+idx+',\'marca\',this.value)"></div>'+
-      '<div class="mf"><label>Precio (€)</label><input type="number" inputmode="decimal" step="0.01" placeholder="0.00" value="'+(c.precio||'')+'" oninput="upComp('+idx+',\'precio\',this.value)"></div>'+
+      '<div class="mf"><label>Marca</label><input type="text" placeholder="Goya, América..." value="'+(c.marca||'')+'" oninput="upComp('+idx+','marca',this.value)"></div>'+
+      '<div class="mf"><label>Precio (€)</label><input type="number" inputmode="decimal" step="0.01" placeholder="0.00" value="'+(c.precio||'')+'" oninput="upComp('+idx+','precio',this.value)"></div>'+
       '</div>'+
-      '<div class="mf" style="margin-bottom:8px"><label>Producto</label><input type="text" placeholder="Harina PAN 1kg..." value="'+(c.producto||'')+'" oninput="upComp('+idx+',\'producto\',this.value)"></div>'+
-      '<div class="mf"><label>Obs.</label><input type="text" placeholder="Posición góndola..." value="'+(c.nota||'')+'" oninput="upComp('+idx+',\'nota\',this.value)"></div>';
+      '<div class="mf" style="margin-bottom:8px"><label>Producto</label><input type="text" placeholder="Harina PAN 1kg..." value="'+(c.producto||'')+'" oninput="upComp('+idx+','producto',this.value)"></div>'+
+      '<div class="mf"><label>Obs.</label><input type="text" placeholder="Posición góndola..." value="'+(c.nota||'')+'" oninput="upComp('+idx+','nota',this.value)"></div>';
     el.appendChild(d);
   });
 }
