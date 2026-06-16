@@ -630,6 +630,7 @@ function catDone(id){
 
 function renderCatList(){
   var el = document.getElementById('clist'); el.innerHTML = '';
+  repopulateConclusion();
   CATS.forEach(function(cat){
     var cs = curV.cats[cat.id];
     var siN = Object.values(cs.brands).filter(function(v){ return v==='si'; }).length;
@@ -1539,6 +1540,25 @@ function addOtroDist(){
 
 function updateOtroDist(i,val){ if(curV.store.otrosDist) curV.store.otrosDist[i]=val; }
 function removeOtroDist(i){ curV.store.otrosDist.splice(i,1); renderOtrosDist(); }
+
+
+// ── CONCLUSION & BUEN CLIENTE ────────────────────────────────────────────
+function setBuenCliente(val){
+  if(!curV) return;
+  curV.store.buenCliente = curV.store.buenCliente === val ? '' : val;
+  var si=document.getElementById('bc-si'), no=document.getElementById('bc-no');
+  if(si) si.className = 'bc-tog' + (curV.store.buenCliente==='si' ? ' bc-on' : '');
+  if(no) no.className = 'bc-tog' + (curV.store.buenCliente==='no' ? ' bc-on' : '');
+}
+
+function repopulateConclusion(){
+  if(!curV) return;
+  var ta = document.getElementById('f-conclusion');
+  if(ta) ta.value = curV.store.conclusion || '';
+  var si=document.getElementById('bc-si'), no=document.getElementById('bc-no');
+  if(si) si.className = 'bc-tog' + (curV.store.buenCliente==='si' ? ' bc-on' : '');
+  if(no) no.className = 'bc-tog' + (curV.store.buenCliente==='no' ? ' bc-on' : '');
+}
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 renderHome();
