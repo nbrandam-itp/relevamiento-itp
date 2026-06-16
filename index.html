@@ -323,6 +323,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
   </div>
   <div class="scroll" style="padding-top:10px">
     <div id="clist"></div>
+
+    <div class="conclusion-box" style="margin-top:14px">
+      <div class="conclusion-title">&#x1F4AC; Conclusi&oacute;n de la visita</div>
+      <div class="buen-cliente-row">
+        <button type="button" id="bc-si" onclick="setBuenCliente('si')" class="bc-tog">&#x2B50; Es buen cliente ITP</button>
+        <button type="button" id="bc-no" onclick="setBuenCliente('no')" class="bc-tog">&#x1F50D; Potencial a desarrollar</button>
+      </div>
+      <textarea id="f-conclusion" placeholder="Ej: Trabaja hace 10 anos con Papagayo, muy buen cliente, casi todo el surtido es ITP. La competencia (Goya) entrega semanal y nosotros quincenal, eso genera quiebres de stock. No compra panela porque no conoce el producto, dejar muestra." oninput="syncField('conclusion',this.value)"></textarea>
+      <div class="conclusion-hint">&#x1F4A1; Ejemplos: diferencias de frecuencia de entrega vs. competencia, brecha de precios, antiguedad de la relacion comercial, motivo por el que no compra alguna categoria, oportunidades detectadas.</div>
+    </div>
+
     <button class="btn btn-brand" onclick="goSum()" style="margin-top:4px">Ver resumen &#x2192;</button>
   </div>
 </div>
