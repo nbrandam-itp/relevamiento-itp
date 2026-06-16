@@ -450,7 +450,21 @@ function newCatState(){
   CATS.forEach(function(c){
     var b = {}; c.brands.forEach(function(x){ b[x] = ''; });
     var p = {}; c.prices.forEach(function(x){ p[x] = ''; });
-    o[c.id] = {brands:b, prices:p, comps:[], photos:[], nota:''};
+    var special = {};
+    if(c.id === 'cong'){
+      special = {
+        pulpaTiene: '',       // si/no
+        pulpaProveedor: '',   // texto: a quien le compra
+        pulpaEsITP: '',       // si/no
+        papaTiene: '',        // si/no
+        papaCompMarca: '',
+        papaCompPrecio: ''
+      };
+    }
+    if(c.id === 'yerba'){
+      special = { clienteKurupi: '' }; // si/no - ya es cliente
+    }
+    o[c.id] = {brands:b, prices:p, comps:[], photos:[], nota:'', special:special};
   });
   return o;
 }
