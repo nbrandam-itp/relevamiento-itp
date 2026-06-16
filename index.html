@@ -692,7 +692,7 @@ function openCat(id){
     var val = cs.prices[line] || '';
     var row = document.createElement('div'); row.className = 'pr-row';
     var pid = 'p_' + line.replace(/[^a-zA-Z0-9]/g,'_');
-    row.innerHTML = '<div class="pr-lbl">'+line+'</div><input type="number" class="pr-inp" id="'+pid+'" inputmode="decimal" step="0.01" placeholder="—" value="'+val+'" oninput="setPrice(''+line+'',this.value)">';
+    row.innerHTML = '<div class="pr-lbl">'+line+'</div><input type="number" class="pr-inp" id="'+pid+'" inputmode="decimal" step="0.01" placeholder="—" value="'+val+'" oninput="setPrice('+line+',this.value)">';
     pEl.appendChild(row);
   });
   renderCompList();
