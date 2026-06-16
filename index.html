@@ -779,6 +779,23 @@ function curCatNota(val){ curV.cats[curCat].nota = val; }
 // ── COMPETITION ────────────────────────────────────────────────────────────
 function renderCompList(){
   var el = document.getElementById('comp-list'); el.innerHTML = '';
+  var cat = CATS.find(function(c){ return c.id===curCat; });
+
+  // Quick-suggest buttons for known competitor brands (Harinas, Congelados, etc.)
+  if(cat && cat.compSuggest && cat.compSuggest.length){
+    var sugRow = document.createElement('div'); sugRow.className = 'comp-suggest-row';
+    sugRow.innerHTML = '<div style="width:100%;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Agregar r&aacute;pido</div>';
+    cat.compSuggest.forEach(function(marca){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'comp-suggest-btn';
+      btn.textContent = '+ ' + marca;
+      btn.onclick = function(){ addCompQuick(marca); };
+      sugRow.appendChild(btn);
+    });
+    el.appendChild(sugRow);
+  }
+
   var comps = curV.cats[curCat].comps || [];
   comps.forEach(function(c, idx){
     var d = document.createElement('div'); d.className = 'comp-item';
@@ -791,6 +808,15 @@ function renderCompList(){
       '<div class="mf"><label>Obs.</label><input type="text" placeholder="Posición góndola..." value="'+(c.nota||'')+'" oninput="upComp('+idx+',\'nota\',this.value)"></div>';
     el.appendChild(d);
   });
+}
+
+function addCompQuick(marca){
+  curV.cats[curCat].comps.push({marca:marca, producto:'', precio:'', nota:''});
+  renderCompList(); renderCatList();
+  setTimeout(function(){
+    var inputs = document.getElementById('comp-list').querySelectorAll('.comp-item:last-child input[type="number"]');
+    if(inputs.length) inputs[0].focus();
+  }, 100);
 }
 function addComp(){
   curV.cats[curCat].comps.push({marca:'',producto:'',precio:'',nota:''});
