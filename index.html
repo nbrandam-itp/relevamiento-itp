@@ -1035,25 +1035,168 @@ function genInforme(arr, desde, hasta){
   toast('Generando informe...', 3000);
   var tSi=0, tNo=0, tC=0, zonas={}, dists={}, distProbs=[], acciones=[], compItems=[], prices=[], catPres={};
   CATS.forEach(function(c){ catPres[c.n]={si:0,no:0,comp:[]}; });
+
+  // Papagayo / distribuidores analysis
+  var papSi=0, papNo=0, papSinDato=0;
+  var otrosDistCount={};
+  var freqCount={};
+  var satCount={'Muy contento':0,'Contento':0,'Regular':0,'Insatisfecho':0};
+  var satScore=0, satTotal=0;
+  var problemTiendas=[];
+
+  // Price benchmark per category/line: { catName_line: {itp:[], comp:[{marca,precio}]} }
+  var priceBenchmark={};
+
   arr.forEach(function(v){
     var z=v.store.zona||'Sin zona'; zonas[z]=(zonas[z]||0)+1;
     var d=v.store.dist||'Sin distribuidor'; dists[d]=(dists[d]||0)+1;
-    if(v.store.prob) distProbs.push({tienda:v.store.nombre,zona:v.store.zona||'—',dist:v.store.dist||'—',sat:v.store.sat||'—',prob:v.store.prob,fecha:v.isoDate||v.date});
+
+    // Papagayo tracking
+    if(v.store.papagayo==='si') papSi++;
+    else if(v.store.papagayo==='no') papNo++;
+    else papSinDato++;
+
+    // Otros distribuidores (when not Papagayo, or additional)
+    if(v.store.otrosDist && v.store.otrosDist.length){
+      v.store.otrosDist.filter(Boolean).forEach(function(od){
+        otrosDistCount[od] = (otrosDistCount[od]||0)+1;
+      });
+    }
+    // If not Papagayo, count the main distributor as "otro"
+    if(v.store.papagayo==='no' && v.store.dist){
+      otrosDistCount[v.store.dist] = (otrosDistCount[v.store.dist]||0)+1;
+    }
+
+    // Frequency tracking
+    if(v.store.freq) freqCount[v.store.freq] = (freqCount[v.store.freq]||0)+1;
+
+    // Satisfaction tracking
+    if(v.store.sat && satCount.hasOwnProperty(v.store.sat)){
+      satCount[v.store.sat]++;
+      satTotal++;
+      var scoreMap = {'Muy contento':100,'Contento':75,'Regular':50,'Insatisfecho':0};
+      satScore += scoreMap[v.store.sat];
+    }
+
+    if(v.store.prob){
+      distProbs.push({tienda:v.store.nombre,zona:v.store.zona||'—',dist:v.store.dist||'—',sat:v.store.sat||'—',freq:v.store.freq||'—',papagayo:v.store.papagayo||'',prob:v.store.prob,fecha:v.isoDate||v.date});
+      problemTiendas.push(v.store.nombre);
+    }
     if(v.store.accion) acciones.push({tienda:v.store.nombre,accion:v.store.accion,fecha:v.isoDate||v.date});
+
     CATS.forEach(function(cat){
       var cs=v.cats[cat.id];if(!cs)return;
       cat.brands.forEach(function(b){
         if(cs.brands[b]==='si'){tSi++;catPres[cat.n].si++;}
         else if(cs.brands[b]==='no'){tNo++;catPres[cat.n].no++;}
       });
-      cat.prices.forEach(function(l){ if(cs.prices[l]) prices.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.n,linea:l,precio:cs.prices[l],fecha:v.isoDate||v.date}); });
-      cs.comps.forEach(function(c2){ if(c2.marca||c2.producto){tC++;catPres[cat.n].comp.push(c2.marca||'—');compItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.n,marca:c2.marca||'',producto:c2.producto||'',precio:c2.precio||'',nota:c2.nota||'',fecha:v.isoDate||v.date});} });
+      cat.prices.forEach(function(l){
+        if(cs.prices[l]){
+          prices.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.n,linea:l,precio:cs.prices[l],fecha:v.isoDate||v.date});
+          var key = cat.n + ' — ' + l;
+          if(!priceBenchmark[key]) priceBenchmark[key] = {itp:[], comp:[]};
+          priceBenchmark[key].itp.push(parseFloat(cs.prices[l]));
+        }
+      });
+      cs.comps.forEach(function(c2){
+        if(c2.marca||c2.producto){
+          tC++;catPres[cat.n].comp.push(c2.marca||'—');
+          compItems.push({tienda:v.store.nombre,zona:v.store.zona||'—',cat:cat.n,marca:c2.marca||'',producto:c2.producto||'',precio:c2.precio||'',nota:c2.nota||'',fecha:v.isoDate||v.date});
+          if(c2.precio){
+            // Try to match this comp item to a price benchmark key by category
+            var matchKey = Object.keys(priceBenchmark).filter(function(k){ return k.indexOf(cat.n+' —')===0; })[0];
+            if(!matchKey){ matchKey = cat.n + ' — general'; if(!priceBenchmark[matchKey]) priceBenchmark[matchKey]={itp:[],comp:[]}; }
+            priceBenchmark[matchKey].comp.push({marca:c2.marca||'—', precio:parseFloat(c2.precio), tienda:v.store.nombre});
+          }
+        }
+      });
     });
   });
+
   var pct=(tSi+tNo)>0?Math.round(tSi/(tSi+tNo)*100):0;
   var fmt=function(iso){var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];};
   var rLabel=desde===hasta?fmt(desde):fmt(desde)+' al '+fmt(hasta);
   var gDate=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+
+  var totalTiendas = arr.length;
+  var papPct = totalTiendas>0 ? Math.round(papSi/totalTiendas*100) : 0;
+  var papNoPct = totalTiendas>0 ? Math.round(papNo/totalTiendas*100) : 0;
+  var satPct = satTotal>0 ? Math.round(satScore/satTotal) : 0;
+
+  // ── PAPAGAYO DONUT CHART (SVG) ──────────────────────────────────────────
+  function donutSVG(siVal, noVal, sinVal, total, colorSi, colorNo, colorSin){
+    if(total===0) return '<div style="text-align:center;color:#9CA3AF;font-size:12px;padding:30px 0">Sin datos</div>';
+    var r=70, cx=90, cy=90, circumference=2*Math.PI*r;
+    var siLen = (siVal/total)*circumference;
+    var noLen = (noVal/total)*circumference;
+    var sinLen = (sinVal/total)*circumference;
+    var svg = '<svg width="180" height="180" viewBox="0 0 180 180">';
+    svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#F3F4F6" stroke-width="24"/>';
+    var offset=0;
+    if(siVal>0){
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+colorSi+'" stroke-width="24" stroke-dasharray="'+siLen+' '+(circumference-siLen)+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+      offset += siLen;
+    }
+    if(noVal>0){
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+colorNo+'" stroke-width="24" stroke-dasharray="'+noLen+' '+(circumference-noLen)+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+      offset += noLen;
+    }
+    if(sinVal>0){
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+colorSin+'" stroke-width="24" stroke-dasharray="'+sinLen+' '+(circumference-sinLen)+'" stroke-dashoffset="'+(-offset)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+    }
+    svg += '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="28" font-weight="700" fill="#111827">'+Math.round(siVal/total*100)+'%</text>';
+    svg += '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="11" fill="#6B7280">con Papagayo</text>';
+    svg += '</svg>';
+    return svg;
+  }
+
+  var papDonut = donutSVG(papSi, papNo, papSinDato, totalTiendas, '#16803C', '#B91C1C', '#D1D5DB');
+
+  // ── SATISFACTION BAR CHART ──────────────────────────────────────────────
+  function satBarChart(){
+    var labels = ['Muy contento','Contento','Regular','Insatisfecho'];
+    var colors = ['#16803C','#65A30D','#F59E0B','#B91C1C'];
+    var maxVal = Math.max.apply(null, labels.map(function(l){ return satCount[l]; })) || 1;
+    var html = '<div style="display:flex;flex-direction:column;gap:10px">';
+    labels.forEach(function(l,i){
+      var val = satCount[l];
+      var widthPct = totalTiendas>0 ? Math.round(val/totalTiendas*100) : 0;
+      html += '<div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600">'+l+'</span><span style="font-weight:700;color:'+colors[i]+'">'+val+' tienda'+(val!==1?'s':'')+' ('+widthPct+'%)</span></div>';
+      html += '<div style="background:#F3F4F6;border-radius:6px;height:14px;overflow:hidden"><div style="background:'+colors[i]+';height:14px;border-radius:6px;width:'+widthPct+'%;transition:width .3s"></div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ── DISTRIBUTOR PIE LEGEND ────────────────────────────────────────────
+  var distPapText = '';
+  distPapText += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:14px;height:14px;border-radius:3px;background:#16803C;flex-shrink:0"></div><div style="font-size:13px"><strong>'+papSi+' tiendas ('+papPct+'%)</strong> atendidas por Papagayo</div></div>';
+  distPapText += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:14px;height:14px;border-radius:3px;background:#B91C1C;flex-shrink:0"></div><div style="font-size:13px"><strong>'+papNo+' tiendas ('+papNoPct+'%)</strong> NO atendidas por Papagayo</div></div>';
+  if(papSinDato>0) distPapText += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:14px;height:14px;border-radius:3px;background:#D1D5DB;flex-shrink:0"></div><div style="font-size:13px;color:#6B7280"><strong>'+papSinDato+' tiendas</strong> sin dato registrado</div></div>';
+
+  // Other distributors (when not Papagayo)
+  var otrosDistHtml = '';
+  var otrosSorted = Object.entries(otrosDistCount).sort(function(a,b){return b[1]-a[1];});
+  if(otrosSorted.length){
+    otrosDistHtml = '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:8px">Otros distribuidores detectados en tiendas sin Papagayo</div>';
+    otrosSorted.forEach(function(e){
+      otrosDistHtml += '<span style="background:#FEF3C7;color:#B45309;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">'+e[0]+': '+e[1]+' tienda'+(e[1]!==1?'s':'')+'</span>';
+    });
+    otrosDistHtml += '</div>';
+  }
+
+  // Frequency breakdown
+  var freqHtml = '';
+  var freqSorted = Object.entries(freqCount).sort(function(a,b){return b[1]-a[1];});
+  if(freqSorted.length){
+    freqHtml = '<div style="margin-top:14px"><div style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-bottom:8px">Frecuencia de entrega declarada</div>';
+    freqSorted.forEach(function(e){
+      freqHtml += '<span style="background:#EFF6FF;color:#1D4ED8;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:2px;display:inline-block">'+e[0]+': '+e[1]+' tienda'+(e[1]!==1?'s':'')+'</span>';
+    });
+    freqHtml += '</div>';
+  }
 
   // Store rows
   var stR='';
@@ -1061,7 +1204,8 @@ function genInforme(arr, desde, hasta){
     var si=0,no=0,c=0;
     CATS.forEach(function(cat){var cs=v.cats[cat.id];if(!cs)return;Object.values(cs.brands).forEach(function(val){if(val==='si')si++;else if(val==='no')no++;});c+=cs.comps.length;});
     var sc=v.store.sat==='Insatisfecho'?'color:#B91C1C':v.store.sat==='Regular'?'color:#B45309':'color:#16803C';
-    stR+='<tr><td>'+(v.isoDate||v.date)+'</td><td><strong>'+v.store.nombre+'</strong></td><td>'+(v.store.zona||'—')+'</td><td>'+(v.store.tipo||'—')+'</td><td>'+(v.store.dist||'—')+'</td><td style="'+sc+';font-weight:600">'+(v.store.sat||'—')+'</td><td>'+(v.store.freq||'—')+'</td><td style="color:#16803C;font-weight:700">'+si+'</td><td style="color:#B91C1C;font-weight:700">'+no+'</td><td style="color:#B45309">'+c+'</td><td>'+(v.store.tel||'—')+'</td><td>'+(v.store.accion||'—')+'</td></tr>';
+    var papBadge = v.store.papagayo==='si' ? '<span style="color:#16803C;font-weight:700">✓ Pap</span>' : v.store.papagayo==='no' ? '<span style="color:#B91C1C;font-weight:700">✗ Pap</span>' : '—';
+    stR+='<tr><td>'+(v.isoDate||v.date)+'</td><td><strong>'+v.store.nombre+'</strong></td><td>'+(v.store.zona||'—')+'</td><td>'+(v.store.tipo||'—')+'</td><td>'+(v.store.dist||'—')+'</td><td>'+papBadge+'</td><td style="'+sc+';font-weight:600">'+(v.store.sat||'—')+'</td><td>'+(v.store.freq||'—')+'</td><td style="color:#16803C;font-weight:700">'+si+'</td><td style="color:#B91C1C;font-weight:700">'+no+'</td><td style="color:#B45309">'+c+'</td><td>'+(v.store.accion||'—')+'</td></tr>';
   });
 
   // Cat rows
@@ -1073,7 +1217,41 @@ function genInforme(arr, desde, hasta){
     cR+='<tr><td><strong>'+cat.n+'</strong></td><td style="color:#16803C;font-weight:700">'+cp.si+'</td><td style="color:#B91C1C;font-weight:700">'+cp.no+'</td><td style="color:'+col+';font-weight:700">'+p2+'%</td><td style="color:#B45309">'+(cm||'—')+'</td></tr>';
   });
 
-  // Price rows
+  // ── PRICE BENCHMARK TABLE (ITP vs Competencia by category/line) ─────────
+  var benchR='';
+  Object.keys(priceBenchmark).sort().forEach(function(key){
+    var b = priceBenchmark[key];
+    if(!b.itp.length && !b.comp.length) return;
+    var itpAvg = b.itp.length ? (b.itp.reduce(function(a,x){return a+x;},0)/b.itp.length) : null;
+    var itpMin = b.itp.length ? Math.min.apply(null,b.itp) : null;
+    var itpMax = b.itp.length ? Math.max.apply(null,b.itp) : null;
+    // Group comp by marca
+    var compByMarca = {};
+    b.comp.forEach(function(c){
+      if(!compByMarca[c.marca]) compByMarca[c.marca]=[];
+      compByMarca[c.marca].push(c.precio);
+    });
+    var compHtml = Object.keys(compByMarca).map(function(m){
+      var vals = compByMarca[m];
+      var avg = vals.reduce(function(a,x){return a+x;},0)/vals.length;
+      return m+': €'+avg.toFixed(2);
+    }).join(' · ');
+    var diffHtml = '—';
+    if(itpAvg!==null && Object.keys(compByMarca).length){
+      var allCompVals = b.comp.map(function(c){return c.precio;});
+      var compAvg = allCompVals.reduce(function(a,x){return a+x;},0)/allCompVals.length;
+      var diff = itpAvg - compAvg;
+      var diffPct = compAvg>0 ? Math.round((diff/compAvg)*100) : 0;
+      diffHtml = (diff>=0?'+':'') + diffPct + '%' + (diff>=0?' más caro':' más barato') + ' que comp.';
+      diffHtml = '<span style="color:'+(diff>0?'#B91C1C':'#16803C')+';font-weight:700">'+diffHtml+'</span>';
+    }
+    benchR += '<tr><td><strong>'+key+'</strong></td>';
+    benchR += '<td style="color:#16803C;font-weight:700">'+(itpAvg!==null?'€'+itpAvg.toFixed(2)+(itpMin!==itpMax?' ('+itpMin.toFixed(2)+'–'+itpMax.toFixed(2)+')':''):'—')+'</td>';
+    benchR += '<td style="color:#B45309">'+(compHtml||'—')+'</td>';
+    benchR += '<td>'+diffHtml+'</td></tr>';
+  });
+
+  // Price rows (raw)
   var pR='';
   prices.forEach(function(p){ pR+='<tr><td>'+p.tienda+'</td><td>'+p.zona+'</td><td>'+p.cat+'</td><td>'+p.linea+'</td><td style="color:#16803C;font-weight:700">€'+p.precio+'</td><td>'+p.fecha+'</td></tr>'; });
 
@@ -1083,7 +1261,10 @@ function genInforme(arr, desde, hasta){
 
   // Dist problems
   var dpR='';
-  distProbs.forEach(function(d){ dpR+='<div style="background:#FEF2F2;border-left:4px solid #EF4444;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px"><div style="font-weight:700;font-size:13px">'+d.tienda+' — '+d.dist+' — '+d.fecha+'</div><div style="font-size:12px;margin-top:4px"><strong>Satisfacción:</strong> '+d.sat+' · <strong>Zona:</strong> '+d.zona+'<br><strong>Problema:</strong> '+d.prob+'</div></div>'; });
+  distProbs.forEach(function(d){
+    var papText = d.papagayo==='si' ? ' (Papagayo)' : d.papagayo==='no' ? ' (No Papagayo)' : '';
+    dpR+='<div style="background:#FEF2F2;border-left:4px solid #EF4444;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:10px"><div style="font-weight:700;font-size:13px">'+d.tienda+' — '+d.dist+papText+' — '+d.fecha+'</div><div style="font-size:12px;margin-top:4px"><strong>Satisfacción:</strong> '+d.sat+' · <strong>Frecuencia:</strong> '+d.freq+' · <strong>Zona:</strong> '+d.zona+'<br><strong>Problema:</strong> '+d.prob+'</div></div>';
+  });
 
   // Acciones
   var acR='';
@@ -1102,13 +1283,15 @@ function genInforme(arr, desde, hasta){
 
   // Bullets
   var bl='<li>Se visitaron <strong>'+arr.length+' tiendas</strong> en el periodo '+rLabel+'.</li>';
+  bl+='<li><strong>'+papSi+' de '+totalTiendas+' tiendas ('+papPct+'%)</strong> están atendidas por Papagayo'+(papNo>0?'; <strong>'+papNo+' tiendas ('+papNoPct+'%)</strong> trabajan con otro distribuidor.':'.')+'</li>';
+  if(satTotal>0) bl+='<li>Índice de satisfacción con el distribuidor: <strong>'+satPct+'%</strong> ('+satTotal+' tiendas evaluadas).</li>';
   bl+='<li>Cobertura ITP promedio: <strong>'+pct+'%</strong> ('+tSi+' presentes / '+tNo+' ausentes).</li>';
   bl+='<li>Se relevaron <strong>'+tC+' productos de la competencia</strong> en gondola.</li>';
   if(distProbs.length) bl+='<li><strong>'+distProbs.length+' tienda'+(distProbs.length>1?'s':'')+' con problemas de distribuidor</strong> — requiere seguimiento urgente.</li>';
   if(acciones.length) bl+='<li><strong>'+acciones.length+' accion'+(acciones.length>1?'es':'')+' pendiente'+(acciones.length>1?'s':'')+' de seguimiento.</strong></li>';
 
   var CSS = 'body{font-family:Arial,sans-serif;margin:0;padding:0;color:#111;font-size:13px;line-height:1.5}';
-  CSS += '.pg{max-width:960px;margin:0 auto;padding:32px 28px}';
+  CSS += '.pg{max-width:980px;margin:0 auto;padding:32px 28px}';
   CSS += '.rh{background:#1A3C5C;color:#fff;padding:26px 30px;border-radius:12px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start}';
   CSS += '.rh h1{font-size:22px;font-weight:700;margin:0 0 5px}.rh p{font-size:12px;opacity:.7;margin:0}';
   CSS += '.rh-r{text-align:right}.rh-b{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600}';
@@ -1122,18 +1305,39 @@ function genInforme(arr, desde, hasta){
   CSS += 'tr:nth-child(even)td{background:#F8F9FB}';
   CSS += '.ab{background:#FFFBEB;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:13px 16px;margin-bottom:8px}';
   CSS += '.ag{background:#F0FDF4;border-left:4px solid #22C55E;border-radius:0 8px 8px 0;padding:13px 16px;margin-bottom:8px}';
+  CSS += '.chart-box{background:#F8F9FB;border:1px solid #E2E5EA;border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;gap:30px;flex-wrap:wrap}';
   CSS += '.footer{margin-top:34px;padding-top:14px;border-top:2px solid #E2E5EA;font-size:10px;color:#9CA3AF;text-align:center}';
   CSS += '@media print{.np{display:none}.pg{padding:20px}}';
 
   var bd = '<div class="pg">';
   bd += '<div class="rh"><div><h1>Informe de Relevamiento de Mercado</h1><p>Intertropico · Canal tradicional · Barcelona y Cataluña</p><p style="margin-top:5px;opacity:.9;font-size:14px;font-weight:600">Periodo: '+rLabel+'</p></div><div class="rh-r"><div class="rh-b">'+gDate+'</div><div style="margin-top:7px;font-size:12px;opacity:.6">Nicolas Brandam — Desarrollo Comercial</div><div style="margin-top:3px;font-size:11px;opacity:.5">CONFIDENCIAL</div></div></div>';
-  bd += '<div class="kpi"><div class="k"><div class="kv">'+arr.length+'</div><div class="kl">Tiendas visitadas</div></div><div class="k"><div class="kv" style="color:#16803C">'+tSi+'</div><div class="kl">ITP presentes</div></div><div class="k"><div class="kv" style="color:#B91C1C">'+tNo+'</div><div class="kl">ITP ausentes</div></div><div class="k"><div class="kv" style="color:#B45309">'+tC+'</div><div class="kl">Competencia</div></div><div class="k"><div class="kv" style="color:#1D4ED8">'+pct+'%</div><div class="kl">Cobertura ITP</div></div></div>';
-  bd += '<div class="sec"><div class="st">Cobertura geografica y distribucion</div><div style="margin-bottom:10px"><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Por zona:</strong><br><div style="margin-top:6px">'+zTags+'</div></div><div><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Distribuidores:</strong><br><div style="margin-top:6px">'+dTags+'</div></div></div>';
-  bd += '<div class="sec"><div class="st">Tiendas visitadas — detalle completo</div><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Zona</th><th>Tipo</th><th>Distribuidor</th><th>Satisfaccion</th><th>Frecuencia</th><th>ITP Si</th><th>ITP No</th><th>Comp.</th><th>Telefono</th><th>Proxima accion</th></tr></thead><tbody>'+stR+'</tbody></table></div>';
+
+  bd += '<div class="kpi"><div class="k"><div class="kv">'+arr.length+'</div><div class="kl">Tiendas visitadas</div></div><div class="k"><div class="kv" style="color:#16803C">'+papPct+'%</div><div class="kl">Con Papagayo</div></div><div class="k"><div class="kv" style="color:#1D4ED8">'+satPct+'%</div><div class="kl">Satisfacción dist.</div></div><div class="k"><div class="kv" style="color:'+(pct>=70?'#16803C':pct>=30?'#B45309':'#B91C1C')+'">'+pct+'%</div><div class="kl">Cobertura ITP</div></div><div class="k"><div class="kv" style="color:#B45309">'+tC+'</div><div class="kl">Competencia</div></div></div>';
+
+  // Papagayo + Satisfaction section with charts
+  bd += '<div class="sec"><div class="st">Cobertura de distribución — Papagayo vs. otros</div>';
+  bd += '<div class="chart-box">';
+  bd += '<div>'+papDonut+'</div>';
+  bd += '<div style="flex:1;min-width:220px">'+distPapText+otrosDistHtml+freqHtml+'</div>';
+  bd += '</div></div>';
+
+  if(satTotal>0){
+    bd += '<div class="sec"><div class="st">Satisfacción declarada con el distribuidor</div>';
+    bd += '<div class="chart-box" style="display:block">'+satBarChart()+'</div></div>';
+  }
+
+  bd += '<div class="sec"><div class="st">Cobertura geografica</div><div style="margin-bottom:10px"><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Por zona:</strong><br><div style="margin-top:6px">'+zTags+'</div></div><div><strong style="font-size:11px;color:#6B7280;text-transform:uppercase">Distribuidores principales:</strong><br><div style="margin-top:6px">'+dTags+'</div></div></div>';
+
+  bd += '<div class="sec"><div class="st">Tiendas visitadas — detalle completo</div><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Zona</th><th>Tipo</th><th>Distribuidor</th><th>Pap.</th><th>Satisfaccion</th><th>Frecuencia</th><th>ITP Si</th><th>ITP No</th><th>Comp.</th><th>Proxima accion</th></tr></thead><tbody>'+stR+'</tbody></table></div>';
+
   if(dpR){ bd+='<div class="sec"><div class="st">Problemas con distribuidores ('+distProbs.length+')</div>'+dpR+'<div style="background:#FFF7ED;border-radius:8px;padding:12px;margin-top:8px;font-size:12px"><strong>Nota para direccion:</strong> Los problemas de servicio afectan la presencia de productos ITP en tienda. Se recomienda revisar los SLA con los distribuidores mencionados.</div></div>'; }
   else{ bd+='<div class="sec"><div class="st">Relacion con distribuidores</div><div class="ag"><strong>Sin quejas registradas en el periodo.</strong> Todos los clientes reportaron relacion satisfactoria.</div></div>'; }
+
   bd += '<div class="sec"><div class="st">Presencia Intertropico / Morixe por categoria</div><table><thead><tr><th>Categoria</th><th>Si</th><th>No</th><th>Cobertura</th><th>Competencia principal</th></tr></thead><tbody>'+cR+'</tbody></table></div>';
-  if(pR) bd+='<div class="sec"><div class="st">Benchmark de precios ITP en gondola</div><table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoria</th><th>Producto</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>'+pR+'</tbody></table></div>';
+
+  if(benchR) bd+='<div class="sec"><div class="st">Benchmark de precios — ITP vs. Competencia (ej. Harina PAN vs Goya)</div><table><thead><tr><th>Categoria / Referencia</th><th>Precio ITP (prom.)</th><th>Precio Competencia</th><th>Diferencia</th></tr></thead><tbody>'+benchR+'</tbody></table></div>';
+
+  if(pR) bd+='<div class="sec"><div class="st">Detalle de precios ITP relevados en gondola</div><table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoria</th><th>Producto</th><th>Precio</th><th>Fecha</th></tr></thead><tbody>'+pR+'</tbody></table></div>';
   if(compR) bd+='<div class="sec"><div class="st">Competencia relevada por categoria y tienda</div><table><thead><tr><th>Tienda</th><th>Zona</th><th>Categoria</th><th>Marca</th><th>Producto</th><th>Precio</th><th>Obs.</th><th>Fecha</th></tr></thead><tbody>'+compR+'</tbody></table></div>';
   if(acR) bd+='<div class="sec"><div class="st">Proximas acciones comerciales</div><table><thead><tr><th>Fecha</th><th>Tienda</th><th>Accion pendiente</th></tr></thead><tbody>'+acR+'</tbody></table></div>';
   if(phH) bd+='<div class="sec"><div class="st">Registro fotografico de gondola</div>'+phH+'</div>';
