@@ -907,6 +907,8 @@ function renderSum(v, cid){
     allC.forEach(function(c){ h += '<div style="font-size:12px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid var(--border)"><span style="font-weight:700;color:var(--amber)">'+(c.marca||'—')+'</span>'+(c.producto?' · '+c.producto:'')+(c.precio?' € '+c.precio:'')+' <span style="color:var(--muted)">'+c.cat+'</span>'+(c.nota?'<br><span style="color:var(--muted)">'+c.nota+'</span>':'')+'</div>'; });
     h += '</div>';
   }
+  if(v.store.buenCliente) h += '<div class="ibox" style="background:'+(v.store.buenCliente==='si'?'#F0FDF4':'#FFFBEB')+'"><div class="il">'+(v.store.buenCliente==='si'?'⭐ Buen cliente ITP':'🔍 Potencial a desarrollar')+'</div></div>';
+  if(v.store.conclusion) h += '<div class="ibox" style="background:#FFFBEB;border-color:#FCD34D"><div class="il" style="color:#92400E">💬 Conclusión de la visita</div><div class="iv">'+v.store.conclusion+'</div></div>';
   if(v.store.notas) h += '<div class="ibox"><div class="il">Notas generales</div><div class="iv">'+v.store.notas+'</div></div>';
   document.getElementById(cid).innerHTML = h;
 }
