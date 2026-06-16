@@ -709,41 +709,39 @@ function renderSpecial(cat, cs){
   var html = '';
 
   if(cat.id === 'cong'){
-    html += '<div class="sec-title" style="color:#0369A1">&#x1F50E; Relevamiento espec&iacute;fico Congelados</div>';
+    html += '<div class="sec-title" style="color:#0369A1">&#x1F50E; Relevamiento especifico Congelados</div>';
 
-    // PULPAS
     html += '<div class="cong-block"><div class="cong-block-title">&#x1F347; Pulpas de fruta</div>';
-    html += '<div class="cong-row"><label>&iquest;Tiene pulpas en g&oacute;ndola?</label><div style="display:flex;gap:8px">';
-    html += '<button type="button" onclick="setSpecial('pulpaTiene','si')" id="sp-pulpaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
-    html += '<button type="button" onclick="setSpecial('pulpaTiene','no')" id="sp-pulpaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
+    html += '<div class="cong-row"><label>Tiene pulpas en gondola?</label><div style="display:flex;gap:8px">';
+    html += '<button type="button" onclick="setSpecial(' + "'pulpaTiene'" + ',' + "'si'" + ')" id="sp-pulpaTiene-si" class="comp-suggest-btn" style="flex:1' + (cs.special.pulpaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'') + '">Si</button>';
+    html += '<button type="button" onclick="setSpecial(' + "'pulpaTiene'" + ',' + "'no'" + ')" id="sp-pulpaTiene-no" class="comp-suggest-btn" style="flex:1' + (cs.special.pulpaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'') + '">No</button></div></div>';
     if(cs.special.pulpaTiene === 'si'){
-      html += '<div class="cong-row"><label>&iquest;A qui&eacute;n le compra las pulpas?</label><input type="text" id="sp-pulpaProveedor" value="'+(cs.special.pulpaProveedor||'')+'" placeholder="Nombre del proveedor..." oninput="setSpecial('pulpaProveedor',this.value)"></div>';
-      html += '<div class="cong-row"><label>&iquest;Esa pulpa es de ITP (Frugy)?</label><div style="display:flex;gap:8px">';
-      html += '<button type="button" onclick="setSpecial('pulpaEsITP','si')" id="sp-pulpaEsITP-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;, es ITP</button>';
-      html += '<button type="button" onclick="setSpecial('pulpaEsITP','no')" id="sp-pulpaEsITP-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; Es otra marca</button></div></div>';
+      html += '<div class="cong-row"><label>A quien le compra las pulpas?</label><input type="text" id="sp-pulpaProveedor" value="' + (cs.special.pulpaProveedor||'') + '" placeholder="Nombre del proveedor..." oninput="setSpecial(' + "'pulpaProveedor'" + ',this.value)"></div>';
+      html += '<div class="cong-row"><label>Esa pulpa es de ITP (Frugy)?</label><div style="display:flex;gap:8px">';
+      html += '<button type="button" onclick="setSpecial(' + "'pulpaEsITP'" + ',' + "'si'" + ')" id="sp-pulpaEsITP-si" class="comp-suggest-btn" style="flex:1' + (cs.special.pulpaEsITP==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'') + '">Si, es ITP</button>';
+      html += '<button type="button" onclick="setSpecial(' + "'pulpaEsITP'" + ',' + "'no'" + ')" id="sp-pulpaEsITP-no" class="comp-suggest-btn" style="flex:1' + (cs.special.pulpaEsITP==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'') + '">Es otra marca</button></div></div>';
     }
     html += '</div>';
 
-    // PATATAS / PAPAS CONGELADAS
     html += '<div class="cong-block"><div class="cong-block-title">&#x1F954; Patatas congeladas</div>';
-    html += '<div class="cong-row"><label>&iquest;Vende patatas congeladas?</label><div style="display:flex;gap:8px">';
-    html += '<button type="button" onclick="setSpecial('papaTiene','si')" id="sp-papaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
-    html += '<button type="button" onclick="setSpecial('papaTiene','no')" id="sp-papaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
+    html += '<div class="cong-row"><label>Vende patatas congeladas?</label><div style="display:flex;gap:8px">';
+    html += '<button type="button" onclick="setSpecial(' + "'papaTiene'" + ',' + "'si'" + ')" id="sp-papaTiene-si" class="comp-suggest-btn" style="flex:1' + (cs.special.papaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'') + '">Si</button>';
+    html += '<button type="button" onclick="setSpecial(' + "'papaTiene'" + ',' + "'no'" + ')" id="sp-papaTiene-no" class="comp-suggest-btn" style="flex:1' + (cs.special.papaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'') + '">No</button></div></div>';
     if(cs.special.papaTiene === 'si'){
-      html += '<div class="cong-row"><label>Marca de la competencia</label><input type="text" id="sp-papaCompMarca" value="'+(cs.special.papaCompMarca||'')+'" placeholder="Ej: McCain, Goya..." oninput="setSpecial('papaCompMarca',this.value)"></div>';
-      html += '<div class="cong-row"><label>Precio (&euro;)</label><input type="number" inputmode="decimal" step="0.01" id="sp-papaCompPrecio" value="'+(cs.special.papaCompPrecio||'')+'" placeholder="0.00" oninput="setSpecial('papaCompPrecio',this.value)"></div>';
+      html += '<div class="cong-row"><label>Marca de la competencia</label><input type="text" id="sp-papaCompMarca" value="' + (cs.special.papaCompMarca||'') + '" placeholder="Ej: McCain, Goya..." oninput="setSpecial(' + "'papaCompMarca'" + ',this.value)"></div>';
+      html += '<div class="cong-row"><label>Precio (EUR)</label><input type="number" inputmode="decimal" step="0.01" id="sp-papaCompPrecio" value="' + (cs.special.papaCompPrecio||'') + '" placeholder="0.00" oninput="setSpecial(' + "'papaCompPrecio'" + ',this.value)"></div>';
     }
     html += '</div>';
 
-    html += '<div class="cong-row" style="margin-top:4px"><label style="color:#0369A1;font-weight:700">&#x1F4E6; Posible distribuidor de congelados detectado</label><input type="text" id="sp-distCongelados" value="'+(cs.special.distCongelados||'')+'" placeholder="Nombre del distribuidor de este canal..." oninput="setSpecial('distCongelados',this.value)"></div>';
+    html += '<div class="cong-row" style="margin-top:4px"><label style="color:#0369A1;font-weight:700">Posible distribuidor de congelados detectado</label><input type="text" id="sp-distCongelados" value="' + (cs.special.distCongelados||'') + '" placeholder="Nombre del distribuidor de este canal..." oninput="setSpecial(' + "'distCongelados'" + ',this.value)"></div>';
   }
 
   if(cat.id === 'yerba'){
     var active = cs.special.clienteKurupi === 'si';
-    html += '<div class="kurupi-badge'+(active?' active':'')+'">';
-    html += '<input type="checkbox" id="sp-kurupi-check" '+(active?'checked':'')+' onchange="setSpecial('clienteKurupi', this.checked?'si':'')" style="width:20px;height:20px">';
-    html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:'+(active?'#16803C':'#92400E')+'">&#x2B50; Ya es cliente Kurupi</div>';
-    html += '<div style="font-size:11px;color:'+(active?'#16803C':'#92400E')+'">Marcar si ya compra Kurupi — posible entrada de nuevas yerbas ITP a futuro</div></div>';
+    html += '<div class="kurupi-badge' + (active?' active':'') + '">';
+    html += '<input type="checkbox" id="sp-kurupi-check" ' + (active?'checked':'') + ' onchange="setSpecial(' + "'clienteKurupi'" + ', this.checked?' + "'si'" + ':' + "''" + ')" style="width:20px;height:20px">';
+    html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:' + (active?'#16803C':'#92400E') + '">Ya es cliente Kurupi</div>';
+    html += '<div style="font-size:11px;color:' + (active?'#16803C':'#92400E') + '">Marcar si ya compra Kurupi - posible entrada de nuevas yerbas ITP a futuro</div></div>';
     html += '</div>';
   }
 
@@ -755,7 +753,6 @@ function setSpecial(field, value){
   var cs = curV.cats[curCat];
   if(!cs.special) cs.special = {};
   cs.special[field] = value;
-  // Re-render to show/hide conditional fields
   var cat = CATS.find(function(c){ return c.id === curCat; });
   renderSpecial(cat, cs);
   renderCatList();
@@ -801,11 +798,11 @@ function renderCompList(){
     var d = document.createElement('div'); d.className = 'comp-item';
     d.innerHTML = '<button class="comp-del" onclick="rmComp('+idx+')">x</button>'+
       '<div class="two" style="margin-bottom:8px">'+
-      '<div class="mf"><label>Marca</label><input type="text" placeholder="Goya, América..." value="'+(c.marca||'')+'" oninput="upComp('+idx+','marca',this.value)"></div>'+
-      '<div class="mf"><label>Precio (€)</label><input type="number" inputmode="decimal" step="0.01" placeholder="0.00" value="'+(c.precio||'')+'" oninput="upComp('+idx+','precio',this.value)"></div>'+
+      '<div class="mf"><label>Marca</label><input type="text" placeholder="Goya, América..." value="'+(c.marca||'')+'" oninput="upComp('+idx+',\'marca\',this.value)"></div>'+
+      '<div class="mf"><label>Precio (€)</label><input type="number" inputmode="decimal" step="0.01" placeholder="0.00" value="'+(c.precio||'')+'" oninput="upComp('+idx+',\'precio\',this.value)"></div>'+
       '</div>'+
-      '<div class="mf" style="margin-bottom:8px"><label>Producto</label><input type="text" placeholder="Harina PAN 1kg..." value="'+(c.producto||'')+'" oninput="upComp('+idx+','producto',this.value)"></div>'+
-      '<div class="mf"><label>Obs.</label><input type="text" placeholder="Posición góndola..." value="'+(c.nota||'')+'" oninput="upComp('+idx+','nota',this.value)"></div>';
+      '<div class="mf" style="margin-bottom:8px"><label>Producto</label><input type="text" placeholder="Harina PAN 1kg..." value="'+(c.producto||'')+'" oninput="upComp('+idx+',\'producto\',this.value)"></div>'+
+      '<div class="mf"><label>Obs.</label><input type="text" placeholder="Posición góndola..." value="'+(c.nota||'')+'" oninput="upComp('+idx+',\'nota\',this.value)"></div>';
     el.appendChild(d);
   });
 }
@@ -1503,32 +1500,7 @@ function genInforme(arr, desde, hasta){
   bd+='</div>';
   bd+='<div class="np" style="text-align:center;padding:20px;background:#F4F5F7"><button onclick="window.print()" style="padding:13px 28px;background:#1A3C5C;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">Imprimir / Guardar PDF</button><button onclick="window.close()" style="padding:13px 22px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button></div>';
 
-  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'
-/* CONGELADOS SPECIAL FIELDS */
-.cong-block{background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:10px;padding:12px;margin-bottom:10px}
-.cong-block-title{font-size:12px;font-weight:700;color:#0369A1;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px}
-.cong-row{margin-bottom:8px}
-.cong-row label{font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
-.cong-row input,.cong-row select{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif}
-/* KURUPI CLIENT BADGE */
-.kurupi-badge{background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:9px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.kurupi-badge.active{background:#DCFCE7;border-color:#86EFAC}
-/* COMP QUICK SUGGEST */
-.comp-suggest-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.comp-suggest-btn{padding:7px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif}
-.comp-suggest-btn:active{background:var(--bg)}
-/* CONCLUSION SECTION */
-.conclusion-box{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:2px solid #FCD34D;border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.conclusion-title{font-size:13px;font-weight:700;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.conclusion-box textarea{width:100%;font-size:14px;padding:11px 12px;border:1.5px solid #FCD34D;border-radius:9px;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif;resize:none;min-height:90px}
-.conclusion-box textarea:focus{outline:none;border-color:#92400E}
-.conclusion-hint{font-size:11px;color:#92400E;margin-top:6px;line-height:1.4}
-/* BUEN CLIENTE TOGGLE */
-.buen-cliente-row{display:flex;gap:8px;margin-bottom:10px}
-.bc-tog{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;text-align:center}
-.bc-tog.bc-on{background:#DCFCE7;color:var(--green);border-color:#86EFAC}
-
-</style></head><body>'+bd+'</body></html>';
+  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'</style></head><body>'+bd+'</body></html>';
   var blob = new Blob([htm], {type:'text/html;charset=utf-8'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
