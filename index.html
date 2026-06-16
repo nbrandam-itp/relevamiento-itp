@@ -346,6 +346,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
     <button class="tb-btn" onclick="go('s-cats')">OK &#x2713;</button>
   </div>
   <div class="scroll" style="padding:0 0 20px">
+    <div class="sec" id="special-section" style="display:none"></div>
     <div class="sec"><div class="sec-title">&#x1F3F7;&#xFE0F; Presencia Intertropico / Morixe</div><div id="itp-brands"></div></div>
     <div class="sec"><div class="sec-title" style="color:var(--green)">&#x1F4B0; Precios ITP en g&oacute;ndola</div><div id="itp-prices"></div></div>
     <div class="sec"><div class="sec-title" style="color:var(--amber)">&#x1F3EA; Competencia en esta categor&iacute;a</div><div id="comp-list"></div><button class="comp-add" onclick="addComp()">+ Agregar producto competencia</button></div>
@@ -405,10 +406,10 @@ var SHEETS = 'https://script.google.com/macros/s/AKfycbxfbb0a3g4TPupLOYWFXHvDDCV
 var STORE_KEY = 'itp_v6';
 
 var CATS = [
-  {id:'yerba',ic:'🧉',n:'Yerba Mate',brands:['Kurupí','Selecta','Pajarito','Colón'],prices:['Yerba 500g','Yerba 1kg']},
+  {id:'yerba',ic:'🧉',n:'Yerba Mate',brands:['Kurupí','Selecta','Pajarito','Colón'],prices:['Yerba 500g','Yerba 1kg'],special_ui:true},
   {id:'harina',ic:'🫓',n:'Harinas de Maíz',brands:['Harina Morixe (ITP)'],prices:['Harina maíz blanca 1kg','Harina maíz amarilla 1kg','Cachapa 500g'],compSuggest:['PAN','Goya','Campo9','Otra']},
   {id:'almidon',ic:'🌾',n:'Almidones y harinas',brands:['Almidón yuca Selecta','Harina Maca ITP'],prices:['Almidón yuca 500g','Almidón yuca 1kg']},
-  {id:'cong',ic:'🧊',n:'Congelados',brands:['Pulpas Frugy','Yuca / choclo / ají ITP'],prices:['Pulpa fruta 250g','Yuca congelada 500g','Choclo 500g'],compSuggest:['Goya','América','La Latina','Don Diego']},
+  {id:'cong',ic:'🧊',n:'Congelados',brands:['Pulpas Frugy','Yuca / choclo / ají ITP'],prices:['Pulpa fruta 250g','Yuca congelada 500g','Choclo 500g'],compSuggest:['Goya','América','La Latina','Don Diego'],special_ui:true},
   {id:'leg',ic:'🫘',n:'Legumbres',brands:['Porotos Selecta','Frijoles Campofresco'],prices:['Porotos / frijoles 500g']},
   {id:'beb',ic:'🥤',n:'Bebidas',brands:['Pony Malta','Chicha Morada ITP','Jugo Gloria','Inca Kola','Frescolita'],prices:['Malta 330ml','Jugo / refresco 1L']},
   {id:'snk',ic:'🍟',n:'Snacks',brands:['Snacks ITP (chipa, rosquillas)'],prices:['Snack individual']},
@@ -697,7 +698,67 @@ function openCat(id){
   renderCompList();
   renderPhStrip();
   document.getElementById('cd-nota').value = cs.nota || '';
+  renderSpecial(cat, cs);
   go('s-cd');
+}
+
+function renderSpecial(cat, cs){
+  var sec = document.getElementById('special-section');
+  if(!cat.special_ui){ sec.style.display='none'; sec.innerHTML=''; return; }
+  sec.style.display='block';
+  var html = '';
+
+  if(cat.id === 'cong'){
+    html += '<div class="sec-title" style="color:#0369A1">&#x1F50E; Relevamiento espec&iacute;fico Congelados</div>';
+
+    // PULPAS
+    html += '<div class="cong-block"><div class="cong-block-title">&#x1F347; Pulpas de fruta</div>';
+    html += '<div class="cong-row"><label>&iquest;Tiene pulpas en g&oacute;ndola?</label><div style="display:flex;gap:8px">';
+    html += '<button type="button" onclick="setSpecial(\'pulpaTiene\',\'si\')" id="sp-pulpaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
+    html += '<button type="button" onclick="setSpecial(\'pulpaTiene\',\'no\')" id="sp-pulpaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
+    if(cs.special.pulpaTiene === 'si'){
+      html += '<div class="cong-row"><label>&iquest;A qui&eacute;n le compra las pulpas?</label><input type="text" id="sp-pulpaProveedor" value="'+(cs.special.pulpaProveedor||'')+'" placeholder="Nombre del proveedor..." oninput="setSpecial(\'pulpaProveedor\',this.value)"></div>';
+      html += '<div class="cong-row"><label>&iquest;Esa pulpa es de ITP (Frugy)?</label><div style="display:flex;gap:8px">';
+      html += '<button type="button" onclick="setSpecial(\'pulpaEsITP\',\'si\')" id="sp-pulpaEsITP-si" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;, es ITP</button>';
+      html += '<button type="button" onclick="setSpecial(\'pulpaEsITP\',\'no\')" id="sp-pulpaEsITP-no" class="comp-suggest-btn" style="flex:1'+(cs.special.pulpaEsITP==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; Es otra marca</button></div></div>';
+    }
+    html += '</div>';
+
+    // PATATAS / PAPAS CONGELADAS
+    html += '<div class="cong-block"><div class="cong-block-title">&#x1F954; Patatas congeladas</div>';
+    html += '<div class="cong-row"><label>&iquest;Vende patatas congeladas?</label><div style="display:flex;gap:8px">';
+    html += '<button type="button" onclick="setSpecial(\'papaTiene\',\'si\')" id="sp-papaTiene-si" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='si'?';background:#DCFCE7;color:#16803C;border-color:#86EFAC':'')+'">&#x2713; S&iacute;</button>';
+    html += '<button type="button" onclick="setSpecial(\'papaTiene\',\'no\')" id="sp-papaTiene-no" class="comp-suggest-btn" style="flex:1'+(cs.special.papaTiene==='no'?';background:#FEE2E2;color:#B91C1C;border-color:#FCA5A5':'')+'">&#x2717; No</button></div></div>';
+    if(cs.special.papaTiene === 'si'){
+      html += '<div class="cong-row"><label>Marca de la competencia</label><input type="text" id="sp-papaCompMarca" value="'+(cs.special.papaCompMarca||'')+'" placeholder="Ej: McCain, Goya..." oninput="setSpecial(\'papaCompMarca\',this.value)"></div>';
+      html += '<div class="cong-row"><label>Precio (&euro;)</label><input type="number" inputmode="decimal" step="0.01" id="sp-papaCompPrecio" value="'+(cs.special.papaCompPrecio||'')+'" placeholder="0.00" oninput="setSpecial(\'papaCompPrecio\',this.value)"></div>';
+    }
+    html += '</div>';
+
+    html += '<div class="cong-row" style="margin-top:4px"><label style="color:#0369A1;font-weight:700">&#x1F4E6; Posible distribuidor de congelados detectado</label><input type="text" id="sp-distCongelados" value="'+(cs.special.distCongelados||'')+'" placeholder="Nombre del distribuidor de este canal..." oninput="setSpecial(\'distCongelados\',this.value)"></div>';
+  }
+
+  if(cat.id === 'yerba'){
+    var active = cs.special.clienteKurupi === 'si';
+    html += '<div class="kurupi-badge'+(active?' active':'')+'">';
+    html += '<input type="checkbox" id="sp-kurupi-check" '+(active?'checked':'')+' onchange="setSpecial(\'clienteKurupi\', this.checked?\'si\':\'\')" style="width:20px;height:20px">';
+    html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:'+(active?'#16803C':'#92400E')+'">&#x2B50; Ya es cliente Kurupi</div>';
+    html += '<div style="font-size:11px;color:'+(active?'#16803C':'#92400E')+'">Marcar si ya compra Kurupi — posible entrada de nuevas yerbas ITP a futuro</div></div>';
+    html += '</div>';
+  }
+
+  sec.innerHTML = html;
+}
+
+function setSpecial(field, value){
+  if(!curV || !curCat) return;
+  var cs = curV.cats[curCat];
+  if(!cs.special) cs.special = {};
+  cs.special[field] = value;
+  // Re-render to show/hide conditional fields
+  var cat = CATS.find(function(c){ return c.id === curCat; });
+  renderSpecial(cat, cs);
+  renderCatList();
 }
 
 function setBrand(b, val){
