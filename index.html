@@ -170,6 +170,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);ove
 .dsc{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:10px;text-align:center}
 .dsc-v{font-size:20px;font-weight:700;color:var(--accent)}
 .dsc-l{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* CONGELADOS SPECIAL FIELDS */
+.cong-block{background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:10px;padding:12px;margin-bottom:10px}
+.cong-block-title{font-size:12px;font-weight:700;color:#0369A1;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px}
+.cong-row{margin-bottom:8px}
+.cong-row label{font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.cong-row input,.cong-row select{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif}
+/* KURUPI CLIENT BADGE */
+.kurupi-badge{background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:9px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.kurupi-badge.active{background:#DCFCE7;border-color:#86EFAC}
+/* COMP QUICK SUGGEST */
+.comp-suggest-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.comp-suggest-btn{padding:7px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif}
+.comp-suggest-btn:active{background:var(--bg)}
+/* CONCLUSION SECTION */
+.conclusion-box{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:2px solid #FCD34D;border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.conclusion-title{font-size:13px;font-weight:700;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.conclusion-box textarea{width:100%;font-size:14px;padding:11px 12px;border:1.5px solid #FCD34D;border-radius:9px;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif;resize:none;min-height:90px}
+.conclusion-box textarea:focus{outline:none;border-color:#92400E}
+.conclusion-hint{font-size:11px;color:#92400E;margin-top:6px;line-height:1.4}
+/* BUEN CLIENTE TOGGLE */
+.buen-cliente-row{display:flex;gap:8px;margin-bottom:10px}
+.bc-tog{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;text-align:center}
+.bc-tog.bc-on{background:#DCFCE7;color:var(--green);border-color:#86EFAC}
+
 </style>
 </head>
 <body>
@@ -370,9 +395,9 @@ var STORE_KEY = 'itp_v6';
 
 var CATS = [
   {id:'yerba',ic:'🧉',n:'Yerba Mate',brands:['Kurupí','Selecta','Pajarito','Colón'],prices:['Yerba 500g','Yerba 1kg']},
-  {id:'harina',ic:'🫓',n:'Harinas de Maíz',brands:['Harina Morixe (ITP)'],prices:['Harina maíz blanca 1kg','Harina maíz amarilla 1kg','Cachapa 500g']},
+  {id:'harina',ic:'🫓',n:'Harinas de Maíz',brands:['Harina Morixe (ITP)'],prices:['Harina maíz blanca 1kg','Harina maíz amarilla 1kg','Cachapa 500g'],compSuggest:['PAN','Goya','Campo9','Otra']},
   {id:'almidon',ic:'🌾',n:'Almidones y harinas',brands:['Almidón yuca Selecta','Harina Maca ITP'],prices:['Almidón yuca 500g','Almidón yuca 1kg']},
-  {id:'cong',ic:'🧊',n:'Congelados',brands:['Pulpas Frugy','Yuca / choclo / ají ITP'],prices:['Pulpa fruta 250g','Yuca congelada 500g','Choclo 500g']},
+  {id:'cong',ic:'🧊',n:'Congelados',brands:['Pulpas Frugy','Yuca / choclo / ají ITP'],prices:['Pulpa fruta 250g','Yuca congelada 500g','Choclo 500g'],compSuggest:['Goya','América','La Latina','Don Diego']},
   {id:'leg',ic:'🫘',n:'Legumbres',brands:['Porotos Selecta','Frijoles Campofresco'],prices:['Porotos / frijoles 500g']},
   {id:'beb',ic:'🥤',n:'Bebidas',brands:['Pony Malta','Chicha Morada ITP','Jugo Gloria','Inca Kola','Frescolita'],prices:['Malta 330ml','Jugo / refresco 1L']},
   {id:'snk',ic:'🍟',n:'Snacks',brands:['Snacks ITP (chipa, rosquillas)'],prices:['Snack individual']},
@@ -1346,7 +1371,32 @@ function genInforme(arr, desde, hasta){
   bd+='</div>';
   bd+='<div class="np" style="text-align:center;padding:20px;background:#F4F5F7"><button onclick="window.print()" style="padding:13px 28px;background:#1A3C5C;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px">Imprimir / Guardar PDF</button><button onclick="window.close()" style="padding:13px 22px;background:transparent;color:#6B7280;border:1.5px solid #E2E5EA;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer">Cerrar</button></div>';
 
-  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'</style></head><body>'+bd+'</body></html>';
+  var htm = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Informe ITP '+rLabel+'</title><style>'+CSS+'
+/* CONGELADOS SPECIAL FIELDS */
+.cong-block{background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:10px;padding:12px;margin-bottom:10px}
+.cong-block-title{font-size:12px;font-weight:700;color:#0369A1;margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px}
+.cong-row{margin-bottom:8px}
+.cong-row label{font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.cong-row input,.cong-row select{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif}
+/* KURUPI CLIENT BADGE */
+.kurupi-badge{background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:9px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.kurupi-badge.active{background:#DCFCE7;border-color:#86EFAC}
+/* COMP QUICK SUGGEST */
+.comp-suggest-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.comp-suggest-btn{padding:7px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif}
+.comp-suggest-btn:active{background:var(--bg)}
+/* CONCLUSION SECTION */
+.conclusion-box{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:2px solid #FCD34D;border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.conclusion-title{font-size:13px;font-weight:700;color:#92400E;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.conclusion-box textarea{width:100%;font-size:14px;padding:11px 12px;border:1.5px solid #FCD34D;border-radius:9px;background:#fff;color:var(--text);font-family:'DM Sans',sans-serif;resize:none;min-height:90px}
+.conclusion-box textarea:focus{outline:none;border-color:#92400E}
+.conclusion-hint{font-size:11px;color:#92400E;margin-top:6px;line-height:1.4}
+/* BUEN CLIENTE TOGGLE */
+.buen-cliente-row{display:flex;gap:8px;margin-bottom:10px}
+.bc-tog{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;text-align:center}
+.bc-tog.bc-on{background:#DCFCE7;color:var(--green);border-color:#86EFAC}
+
+</style></head><body>'+bd+'</body></html>';
   var blob = new Blob([htm], {type:'text/html;charset=utf-8'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
