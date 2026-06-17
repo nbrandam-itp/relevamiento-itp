@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Relevamiento · Intertropico</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -1651,6 +1654,16 @@ function repopulateConclusion(){
   if(si) si.className = 'bc-tog' + (curV.store.buenCliente==='si' ? ' bc-on' : '');
   if(no) no.className = 'bc-tog' + (curV.store.buenCliente==='no' ? ' bc-on' : '');
 }
+
+
+// ── WARN BEFORE LEAVING WITH UNSAVED DATA ────────────────────────────────
+window.addEventListener('beforeunload', function(e){
+  if(curV && curV.store && curV.store.nombre){
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 renderHome();
