@@ -510,30 +510,52 @@ function getLoc(){
     res.style.display = 'block';
     res.textContent = '📍 GPS: ' + lat.toFixed(6) + ', ' + lng.toFixed(6) + ' — Buscando dirección...';
     if(curV){ curV.store.lat = lat; curV.store.lng = lng; }
-    // Reverse geocode
-    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=es')
+    // Reverse geocode with high zoom for exact address-level detail
+    fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=es&zoom=18&addressdetails=1')
       .then(function(r){ return r.json(); })
       .then(function(d){
         var a = d.address || {};
         var street = [a.road, a.house_number].filter(Boolean).join(', ');
-        var city = a.suburb||a.neighbourhood||a.city_district||a.city||'';
-        var full = street || d.display_name || (lat.toFixed(5)+', '+lng.toFixed(5));
-        res.textContent = '📍 ' + full + (city?' · '+city:'');
+        // Locality: prefer the most specific town/city-level name available
+        var locality = a.suburb || a.neighbourhood || a.quarter || a.city_district || a.town || a.village || a.city || a.municipality || '';
+        var province = a.county || a.state || '';
+        // Build full address: "Calle 123, Localidad" (always include locality)
+        var fullAddr = street || '';
+        if(locality && !fullAddr.toLowerCase().includes(locality.toLowerCase())){
+          fullAddr = fullAddr ? (fullAddr + ', ' + locality) : locality;
+        }
+        if(!fullAddr) fullAddr = d.display_name || (lat.toFixed(5)+', '+lng.toFixed(5));
+
+        res.textContent = '📍 ' + fullAddr;
+
         var dirEl = document.getElementById('fd');
-        if(dirEl && !dirEl.value){ dirEl.value = street||''; syncField('dir', dirEl.value); }
+        if(dirEl){ dirEl.value = fullAddr; syncField('dir', fullAddr); }
+
         var zonaEl = document.getElementById('fz');
         if(zonaEl && !zonaEl.value){
-          var cl = (city||'').toLowerCase();
+          var cl = (locality||'').toLowerCase();
           if(cl.includes('hospitalet')){ zonaEl.value='Hospitalet'; syncField('zona','Hospitalet'); }
           else if(cl.includes('badalona')){ zonaEl.value='Badalona'; syncField('zona','Badalona'); }
           else if(cl.includes('coloma')){ zonaEl.value='Santa Coloma'; syncField('zona','Santa Coloma'); }
           else if(cl.includes('cornell')){ zonaEl.value='Cornellà'; syncField('zona','Cornellà'); }
+          else if(cl.includes('eixample')){ zonaEl.value='Eixample'; syncField('zona','Eixample'); }
+          else if(cl.includes('sant martí')||cl.includes('sant marti')){ zonaEl.value='Sant Martí'; syncField('zona','Sant Martí'); }
+          else if(cl.includes('sants')){ zonaEl.value='Sants-Montjuïc'; syncField('zona','Sants-Montjuïc'); }
+          else if(cl.includes('horta')){ zonaEl.value='Horta-Guinardó'; syncField('zona','Horta-Guinardó'); }
+          else if(cl.includes('sant andreu')){ zonaEl.value='Sant Andreu'; syncField('zona','Sant Andreu'); }
+          else if(cl.includes('nou barris')){ zonaEl.value='Nou Barris'; syncField('zona','Nou Barris'); }
+          else if(locality){ zonaEl.value='Otra'; syncField('zona','Otra'); }
         }
-        if(curV){ curV.store.geoAddr = full; curV.store.lat = lat; curV.store.lng = lng; }
-        toast('📍 Ubicación detectada');
+
+        if(curV){
+          curV.store.geoAddr = fullAddr;
+          curV.store.lat = lat;
+          curV.store.lng = lng;
+          curV.store.dir = fullAddr;
+        }
+        toast('📍 Dirección detectada');
       })
       .catch(function(){
-        // Geocoding failed but we have GPS coords - that's still useful
         res.textContent = '📍 ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
         if(curV){ curV.store.geoAddr = lat.toFixed(6)+', '+lng.toFixed(6); }
         toast('📍 Coordenadas guardadas');
@@ -553,10 +575,8 @@ function getLoc(){
     toast(msg, 4000);
   }
 
-  // Try high accuracy first, fallback to low accuracy
   navigator.geolocation.getCurrentPosition(onSuccess, function(err){
     if(err.code === 3){
-      // Timeout - try with lower accuracy and longer timeout
       navigator.geolocation.getCurrentPosition(onSuccess, onError,
         {enableHighAccuracy:false, timeout:20000, maximumAge:60000});
     } else {
